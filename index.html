@@ -1,47 +1,53 @@
-
 <!DOCTYPE html>
 <html lang="uz">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BookSavdo — Kitobga ikkinchi hayot!</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BookSavdo</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#fffaf5;color:#292929}
-header{background:#f47721;color:white;padding:22px 16px;text-align:center}
-header h1{margin:0;font-size:30px}
-header p{margin:7px 0 0}
-.container{max-width:1000px;margin:auto;padding:16px}
+body{margin:0;font-family:Arial;background:#fffaf5;color:#292929;padding-bottom:85px}
+header{background:#f47721;color:white;padding:18px;position:sticky;top:0;z-index:5}
+header h2{margin:0;font-size:25px}
+header p{margin:5px 0 0;font-size:13px}
+main{padding:16px;max-width:700px;margin:auto}
+.page{display:none}
+.page.active{display:block}
 .search{width:100%;padding:14px;border:1px solid #ddd;border-radius:12px;font-size:16px}
-h2{color:#e96c17}
+h3{color:#e96c17}
 .categories{display:flex;gap:8px;overflow:auto;margin:15px 0}
-.categories button,.main-btn{border:0;background:#f47721;color:white;padding:11px 16px;border-radius:10px;white-space:nowrap}
-.categories button.active{background:#292929}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px}
-.card{background:white;border:1px solid #eee;border-radius:14px;padding:12px;box-shadow:0 2px 8px #0000000b}
-.cover{height:130px;background:#fff0e3;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:55px}
-.card h3{font-size:16px;margin:10px 0 5px}
-.muted{color:#777;font-size:13px}
-.price{color:#e96c17;font-size:18px;font-weight:bold;margin:10px 0}
-.card a{display:block;text-align:center;background:#f47721;color:white;text-decoration:none;padding:10px;border-radius:9px;margin-top:8px}
-.card button{border:0;background:none;color:#e96c17;font-size:20px}
-form{background:white;padding:16px;border-radius:14px;border:1px solid #eee;margin:25px 0}
-form input,form select{width:100%;padding:12px;margin:7px 0;border:1px solid #ddd;border-radius:9px;font-size:15px}
-form button{width:100%;padding:13px;background:#f47721;color:white;border:0;border-radius:10px;font-size:16px}
-footer{text-align:center;padding:25px;color:#777}
+.categories button{border:0;background:#ffe8d7;padding:10px 15px;border-radius:20px;white-space:nowrap}
+.categories button.active{background:#f47721;color:white}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.card{background:white;border:1px solid #eee;border-radius:14px;padding:12px}
+.cover{height:115px;background:#fff0e3;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:48px}
+.card h4{margin:10px 0 5px;font-size:15px}
+.muted{font-size:12px;color:#777}
+.price{font-weight:bold;color:#e96c17;margin:10px 0}
+.card a{display:block;text-align:center;background:#f47721;color:white;padding:10px;border-radius:9px;text-decoration:none;margin-top:7px}
+.card button{border:0;background:none;color:#e47721;font-size:20px}
+form input,form select{width:100%;padding:13px;margin:7px 0;border:1px solid #ddd;border-radius:10px;font-size:15px}
+form button,.action{width:100%;padding:14px;background:#f47721;color:white;border:0;border-radius:10px;font-size:16px;margin-top:10px}
+.panel{background:white;border:1px solid #eee;border-radius:14px;padding:16px;margin:12px 0}
+nav{position:fixed;bottom:0;left:0;width:100%;height:72px;background:white;border-top:1px solid #eee;display:flex;justify-content:space-around;align-items:center;z-index:10;padding-bottom:env(safe-area-inset-bottom)}
+nav button{border:0;background:none;color:#777;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11px;flex:1}
+nav button span{font-size:22px}
+nav button.active{color:#f47721;font-weight:bold}
+.empty{text-align:center;color:#888;padding:30px}
 </style>
 </head>
 <body>
 
 <header>
-<h1>📚 BookSavdo</h1>
+<h2>📚 BookSavdo</h2>
 <p>Kitobga ikkinchi hayot!</p>
 </header>
 
-<div class="container">
-<h2>Kitoblarni toping</h2>
-<input class="search" id="search" placeholder="Kitob yoki muallif nomini yozing...">
+<main>
 
+<section class="page active" id="home">
+<h3>Kitoblar katalogi</h3>
+<input class="search" id="search" placeholder="🔍 Kitob yoki muallifni qidiring">
 <div class="categories">
 <button class="active" onclick="filterBooks('Barchasi',this)">Barchasi</button>
 <button onclick="filterBooks('Badiiy',this)">Badiiy</button>
@@ -49,85 +55,130 @@ footer{text-align:center;padding:25px;color:#777}
 <button onclick="filterBooks('Tarix',this)">Tarix</button>
 <button onclick="filterBooks('Darslik',this)">Darslik</button>
 </div>
-
 <div class="grid" id="books"></div>
+</section>
 
-<h2>📖 Kitobingizni soting</h2>
+<section class="page" id="searchPage">
+<h3>🔍 Qidiruv</h3>
+<input class="search" id="search2" placeholder="Kitob nomini yozing...">
+<div class="grid" id="searchResults"></div>
+</section>
+
+<section class="page" id="sell">
+<h3>➕ Kitob sotish</h3>
+<div class="panel">
+<p>Kitobingiz haqida ma'lumot kiriting.</p>
 <form id="bookForm">
 <input id="title" placeholder="Kitob nomi" required>
 <input id="author" placeholder="Muallif" required>
-<input id="price" type="number" placeholder="Narxi (so'm)" required>
+<input id="price" type="number" min="1" placeholder="Narxi (so'm)" required>
 <select id="category">
-<option>Badiiy</option>
-<option>Biznes</option>
-<option>Tarix</option>
-<option>Darslik</option>
+<option>Badiiy</option><option>Biznes</option><option>Tarix</option><option>Darslik</option>
 </select>
 <select id="condition">
-<option>Yaxshi holatda</option>
-<option>Yangi kabi</option>
-<option>O‘qilgan, lekin yaxshi</option>
+<option>Yangi kabi</option><option>Yaxshi holatda</option><option>O‘qilgan</option>
 </select>
-<input id="phone" placeholder="Telefon raqamingiz (+998...)">
-<input id="telegram" placeholder="Telegram username (@username)">
+<input id="phone" placeholder="Telefon raqami (+998...)">
+<input id="telegram" placeholder="Telegram username">
 <button type="submit">Kitobni e'lon qilish</button>
 </form>
 </div>
+</section>
 
-<footer>© 2026 BookSavdo. Kitobga ikkinchi hayot!</footer>
+<section class="page" id="favorites">
+<h3>❤️ Sevimli kitoblar</h3>
+<div class="grid" id="favoriteBooks"></div>
+</section>
+
+<section class="page" id="profile">
+<h3>👤 Mening profilim</h3>
+<div class="panel">
+<h3>BookSavdo foydalanuvchisi</h3>
+<p>O‘zingiz joylagan kitoblar shu yerda ko‘rinadi.</p>
+</div>
+<div class="grid" id="myBooks"></div>
+</section>
+
+</main>
+
+<nav>
+<button class="active" onclick="showPage('home',this)"><span>🏠</span>Bosh sahifa</button>
+<button onclick="showPage('searchPage',this)"><span>🔍</span>Qidiruv</button>
+<button onclick="showPage('sell',this)"><span>➕</span>Sotish</button>
+<button onclick="showPage('favorites',this)"><span>❤️</span>Sevimli</button>
+<button onclick="showPage('profile',this)"><span>👤</span>Profil</button>
+</nav>
 
 <script>
-let books = JSON.parse(localStorage.getItem("booksavdo") || "[]");
-
-if(books.length === 0){
-books = [
-{title:"O‘tkan kunlar",author:"Abdulla Qodiriy",price:35000,category:"Badiiy",condition:"Yaxshi holatda"},
-{title:"Mehrobdan chayon",author:"Abdulla Qodiriy",price:30000,category:"Badiiy",condition:"O‘qilgan, lekin yaxshi"},
-{title:"Boy ota, kambag‘al ota",author:"Robert Kiyosaki",price:45000,category:"Biznes",condition:"Yaxshi holatda"}
+const sample=[
+{id:1,title:"O‘tkan kunlar",author:"Abdulla Qodiriy",price:35000,category:"Badiiy",condition:"Yaxshi holatda"},
+{id:2,title:"Mehrobdan chayon",author:"Abdulla Qodiriy",price:30000,category:"Badiiy",condition:"O‘qilgan"},
+{id:3,title:"Boy ota, kambag‘al ota",author:"Robert Kiyosaki",price:45000,category:"Biznes",condition:"Yangi kabi"},
+{id:4,title:"Tarixdan hikoyalar",author:"Muallif",price:25000,category:"Tarix",condition:"Yaxshi holatda"}
 ];
+
+let books=JSON.parse(localStorage.getItem("bs_books")||"null")||sample;
+let favorites=JSON.parse(localStorage.getItem("bs_favs")||"[]");
+let mine=JSON.parse(localStorage.getItem("bs_mine")||"[]");
+let category="Barchasi";
+
+function safe(s){
+return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
-
-let currentCategory="Barchasi";
-
 function save(){
-localStorage.setItem("booksavdo",JSON.stringify(books));
+localStorage.setItem("bs_books",JSON.stringify(books));
+localStorage.setItem("bs_favs",JSON.stringify(favorites));
+localStorage.setItem("bs_mine",JSON.stringify(mine));
 }
-
-function render(){
-let search=document.getElementById("search").value.toLowerCase();
-let list=books.filter(b=>
-(currentCategory==="Barchasi"||b.category===currentCategory)&&
-(b.title.toLowerCase().includes(search)||b.author.toLowerCase().includes(search))
-);
-
-document.getElementById("books").innerHTML=list.map((b,i)=>`
-<div class="card">
+function card(b){
+return `<div class="card">
 <div class="cover">📚</div>
-<h3>${escapeHTML(b.title)}</h3>
-<div class="muted">${escapeHTML(b.author)}</div>
-<div class="muted">${escapeHTML(b.condition||"")}</div>
+<h4>${safe(b.title)}</h4>
+<div class="muted">${safe(b.author)}</div>
+<div class="muted">${safe(b.condition||"")}</div>
 <div class="price">${Number(b.price).toLocaleString("uz-UZ")} so‘m</div>
-${b.phone?`<a href="tel:${encodeURIComponent(b.phone)}">📞 Qo‘ng‘iroq qilish</a>`:""}
+<button onclick="toggleFav(${b.id})">${favorites.includes(b.id)?"❤️":"♡"}</button>
+${b.phone?`<a href="tel:${safe(b.phone)}">📞 Qo‘ng‘iroq</a>`:""}
 ${b.telegram?`<a href="https://t.me/${encodeURIComponent(b.telegram.replace("@",""))}" target="_blank">✈️ Telegram</a>`:""}
-</div>`).join("") || "<p>Kitob topilmadi.</p>";
+</div>`;
 }
-
-function escapeHTML(value){
-return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function render(){
+let q=document.getElementById("search").value.toLowerCase();
+let list=books.filter(b=>(category==="Barchasi"||b.category===category)&&(b.title+" "+b.author).toLowerCase().includes(q));
+document.getElementById("books").innerHTML=list.map(card).join("")||'<div class="empty">Kitob topilmadi</div>';
+document.getElementById("favoriteBooks").innerHTML=books.filter(b=>favorites.includes(b.id)).map(card).join("")||'<div class="empty">Sevimli kitoblar yo‘q</div>';
+document.getElementById("myBooks").innerHTML=books.filter(b=>mine.includes(b.id)).map(card).join("")||'<div class="empty">Hali kitob joylamagansiz</div>';
 }
-
-function filterBooks(category,button){
-currentCategory=category;
-document.querySelectorAll(".categories button").forEach(b=>b.classList.remove("active"));
-button.classList.add("active");
+function filterBooks(c,btn){
+category=c;
+document.querySelectorAll(".categories button").forEach(x=>x.classList.remove("active"));
+btn.classList.add("active");
 render();
 }
-
+function toggleFav(id){
+favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];
+save();render();searchRender();
+}
+function showPage(id,btn){
+document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+btn.classList.add("active");
+render();
+if(id==="searchPage")searchRender();
+window.scrollTo(0,0);
+}
+function searchRender(){
+let q=document.getElementById("search2").value.toLowerCase();
+document.getElementById("searchResults").innerHTML=books.filter(b=>(b.title+" "+b.author).toLowerCase().includes(q)).map(card).join("")||'<div class="empty">Kitob topilmadi</div>';
+}
 document.getElementById("search").addEventListener("input",render);
+document.getElementById("search2").addEventListener("input",searchRender);
 
 document.getElementById("bookForm").addEventListener("submit",function(e){
 e.preventDefault();
-books.unshift({
+let b={
+id:Date.now(),
 title:document.getElementById("title").value,
 author:document.getElementById("author").value,
 price:Number(document.getElementById("price").value),
@@ -135,15 +186,11 @@ category:document.getElementById("category").value,
 condition:document.getElementById("condition").value,
 phone:document.getElementById("phone").value,
 telegram:document.getElementById("telegram").value
+};
+books.unshift(b);mine.push(b.id);save();this.reset();render();
+alert("Kitobingiz e'lon qilindi!");
+showPage("profile",document.querySelectorAll("nav button")[4]);
 });
-save();
-this.reset();
-currentCategory="Barchasi";
-render();
-alert("Kitob e'lon qilindi!");
-});
-
-save();
 render();
 </script>
 </body>
