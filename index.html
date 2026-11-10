@@ -115,20 +115,15 @@
       <button class="full" onclick="signIn()">Kirish</button>
       <button class="full secondary" onclick="signUp()">Ro‘yxatdan o‘tish</button>
       <p id="authMessage" class="muted"></p>
-    </div>
-    <div id="accountPanel" class="panel hidden">
-      <p id="accountEmail"></p>
-      <h3>Mening e’lonlarim</h3>
-      <div id="myBooksList"></div>
-      <button class="full secondary" onclick="signOut()">Hisobdan chiqish</button>
-    </div>
-  </section>
-
-  <section id="detailPage" class="hidden">
-    <button class="secondary" onclick="showPage('homePage')">← Orqaga</button>
-    <div id="detailContent" class="panel"></div>
-  </section>
-</main>
+    </div><div id="authPanel" class="panel">
+  <input id="firstName" placeholder="Ismingiz">
+  <input id="lastName" placeholder="Familiyangiz">
+  <input id="phoneInput" type="tel" placeholder="+998 90 123 45 67">
+  <input id="passwordInput" type="password" placeholder="Parol (kamida 6 belgi)">
+  <button class="full" onclick="signUp()">Ro‘yxatdan o‘tish</button>
+  <button class="full secondary" onclick="signIn()">Kirish</button>
+  <p id="authMessage" class="muted"></p>
+</div>
 
 <nav>
   <button class="active" onclick="showPage('homePage',this)"><span>🏠</span>Bosh sahifa</button>
