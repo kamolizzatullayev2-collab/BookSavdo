@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BookSavdo</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:var(--tg-theme-bg-color,#faf6ef);--card:var(--tg-theme-secondary-bg-color,#fff);--ink:var(--tg-theme-text-color,#2b2118);--mute:var(--tg-theme-hint-color,#7a6a5a);--acc:var(--tg-theme-button-color,#b5472a);--acc2:var(--tg-theme-button-text-color,#fff);--line:rgba(128,128,128,.25)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,sans-serif;line-height:1.4}
+.w{max-width:760px;margin:0 auto;padding:12px 14px 30px}
+.bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.logo{font-family:Georgia,serif;font-weight:700;font-size:20px}.logo b{color:var(--acc)}
+input,select,button{font:inherit}
+input,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:16px}
+button{border:0;border-radius:10px;padding:10px 14px;background:var(--acc);color:var(--acc2);font-weight:600;cursor:pointer}
+button.g{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0}
+.chip{flex:none;padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:14px}
+.chip.on{background:var(--acc);color:var(--acc2)}
+.flt{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.cnt{color:var(--mute);font-size:13px;margin-bottom:8px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(min-width:560px){.grid{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.cv{height:100px;display:flex;align-items:center;justify-content:center;font-size:42px;position:relative}
+.tag{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:3px 8px;border-radius:99px}
+.b{padding:10px;display:flex;flex-direction:column;gap:3px;flex:1}
+.t{font-weight:700;font-family:Georgia,serif}.a,.m{color:var(--mute);font-size:13px}
+.p{color:var(--acc);font-weight:700;margin-top:auto;padding-top:4px}
+.card button{margin-top:6px;padding:8px;font-size:14px}
+.f{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:20;padding:12px;overflow:auto}.f.o{display:block}
+.fb{max-width:460px;margin:12px auto;background:var(--bg);border-radius:16px;padding:16px}
+.fb input,.fb select{margin-bottom:8px}.fb h2{margin:0 0 10px}.row{display:flex;gap:8px}
+.e{text-align:center;color:var(--mute);padding:34px 0;grid-column:1/-1}
+</style>
+</head>
+<body>
+<div class="w">
+  <div class="bar"><div class="logo">📚 Book<b>Savdo</b></div><button id="add">+ Sotish</button></div>
+  <input id="q" placeholder="Kitob yoki muallif qidiring…">
+  <div class="chips" id="chips"></div>
+  <div class="flt">
+    <select id="city"><option value="">Barcha shaharlar</option></select>
+    <select id="sort"><option value="new">Yangilari</option><option value="cheap">Arzon narx</option><option value="exp">Qimmat narx</option></select>
+  </div>
+  <div class="cnt" id="cnt"></div>
+  <div class="grid" id="list"><div class="e">Yuklanmoqda…</div></div>
+</div>
+<div class="f" id="form"><div class="fb">
+  <h2>Kitobni sotish</h2>
+  <input id="ti" placeholder="Kitob nomi">
+  <input id="au" placeholder="Muallif">
+  <input id="pr" type="number" inputmode="numeric" placeholder="Narxi (so’m)">
+  <select id="ca"></select>
+  <select id="co"><option>Yangidek</option><option selected>Yaxshi</option><option>O’rtacha</option><option>Eskirgan</option></select>
+  <select id="ci"></select>
+  <input id="ct" placeholder="Telefon (Telegram username bo’lsa bo’sh qoldiring)">
+  <div class="row"><button id="save">Joylash</button><button class="g" id="cancel">Bekor qilish</button></div>
+</div></div>
+<script>
+// 1) Supabase sozlamalari: Project Settings → API dan oling
+var SUPABASE_URL = 'https://lszzpfiptmgsjrrrkdwj.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_publishable_G72FGzaa4mFQe5PS77dZaQ_cZUlF3O5';
+
+var tg = window.Telegram && Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+var tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+var CATS=[['Badiiy','📖','#e8c9a8'],['Darslik','🎓','#b8d4e3'],['Bolalar','🧸','#f2d0d6'],['Biznes','💼','#c9dcc0'],['Tarixiy','🏛️','#dcc9e6'],['Boshqa','📚','#d9d4c7']];
+var CITIES=['Toshkent','Samarqand','Buxoro','Andijon','Farg’ona','Namangan','Boshqa'];
+var books=[],cat='';
+var $=function(i){return document.getElementById(i)};
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML}
+function cinfo(n){return CATS.filter(function(c){return c[0]===n})[0]||CATS[5]}
+$('ca').innerHTML=CATS.map(function(c){return '<option>'+c[0]+'</option>'}).join('');
+$('ci').innerHTML=CITIES.map(function(c){return '<option>'+c+'</option>'}).join('');
+$('city').innerHTML+=CITIES.map(function(c){return '<option>'+c+'</option>'}).join('');
+function chips(){
+  var all=[['','Hammasi']].concat(CATS.map(function(c){return [c[0],c[1]+' '+c[0]]}));
+  $('chips').innerHTML=all.map(function(c){return '<button class="chip'+(cat===c[0]?' on':'')+'" data-c="'+c[0]+'">'+c[1]+'</button>'}).join('');
+}
+function render(){
+  var t=$('q').value.trim().toLowerCase(),city=$('city').value,s=$('sort').value;
+  var r=books.filter(function(b){return (!t||((b.title||'')+' '+(b.author||'')).toLowerCase().indexOf(t)>-1)&&(!cat||b.cat===cat)&&(!city||b.city===city)});
+  r.sort(function(a,b){return s==='cheap'?a.price-b.price:s==='exp'?b.price-a.price:new Date(b.created_at)-new Date(a.created_at)});
+  $('cnt').textContent=r.length+' ta kitob topildi';
+  if(!r.length){$('list').innerHTML='<div class="e">Hozircha kitob yo’q. Birinchi bo’lib soting!</div>';return}
+  $('list').innerHTML=r.map(function(b){var c=cinfo(b.cat);
+    return '<div class="card"><div class="cv" style="background:'+c[2]+'">'+c[1]+'<span class="tag">'+esc(b.cond)+'</span></div><div class="b"><div class="t">'+esc(b.title)+'</div><div class="a">'+esc(b.author||'—')+'</div><div class="m">📍 '+esc(b.city)+' · '+esc(b.cat)+'</div><div class="p">'+Number(b.price).toLocaleString('uz-UZ')+' so’m</div><button data-k="'+esc(b.id)+'">Bog’lanish</button></div></div>';
+  }).join('');
+}
+async function load(){
+  var r=await sb.from('books').select('*').order('created_at',{ascending:false}).limit(200);
+  if(r.error){$('list').innerHTML='<div class="e">Yuklab bo’lmadi. Supabase sozlamalarini tekshiring.</div>';return}
+  books=r.data;render();
+}
+$('q').oninput=render;$('city').onchange=render;$('sort').onchange=render;
+$('chips').onclick=function(e){var c=e.target.getAttribute('data-c');if(c===null)return;cat=c;chips();render()};
+$('add').onclick=function(){$('form').classList.add('o')};
+$('cancel').onclick=function(){$('form').classList.remove('o')};
+$('save').onclick=async function(){
+  var contact=$('ct').value.trim()||(tgUser&&tgUser.username?'@'+tgUser.username:'');
+  var b={title:$('ti').value.trim(),author:$('au').value.trim(),price:Number($('pr').value),cat:$('ca').value,cond:$('co').value,city:$('ci').value,contact:contact,seller_id:String(tgUser?tgUser.id:'web')};
+  if(!b.title||!b.price||!b.contact){alert('Nom, narx va aloqani kiriting');return}
+  var r=await sb.from('books').insert(b);
+  if(r.error){alert('Saqlab bo’lmadi');return}
+  ['ti','au','pr','ct'].forEach(function(i){$(i).value=''});$('form').classList.remove('o');load();
+};
+$('list').onclick=function(e){
+  var k=e.target.getAttribute('data-k');if(!k)return;
+  var b=books.filter(function(x){return x.id===k})[0];if(!b)return;
+  var c=b.contact||'';
+  if(c.charAt(0)==='@'){var url='https://t.me/'+c.slice(1);tg?tg.openTelegramLink(url):window.open(url,'_blank')}
+  else{e.target.textContent=c}
+};
+chips();load();
+</script>
+</body>
+</html>
