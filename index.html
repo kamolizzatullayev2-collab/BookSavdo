@@ -1,1048 +1,744 @@
-<!DOCTYPE html>
-<html lang="uz">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BookSavdo — Kitobga ikkinchi hayot!</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: Arial, sans-serif;
-      background: #f7f7f7;
-      color: #222;
-    }
-
-    header {
-      background: #fff;
-      padding: 15px 5%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 15px;
-      flex-wrap: wrap;
-      box-shadow: 0 2px 10px #0000000c;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    .logo {
-      font-size: 25px;
-      font-weight: 900;
-      color: #f47721;
-    }
-
-    .logo span {
-      color: #222;
-    }
-
-    button {
-      border: none;
-      cursor: pointer;
-      border-radius: 9px;
-      padding: 11px 16px;
-      font-weight: bold;
-      font-size: 14px;
-    }
-
-    .primary {
-      background: #f47721;
-      color: white;
-    }
-
-    .secondary {
-      background: #eee;
-      color: #222;
-    }
-
-    .danger {
-      background: #ffe5e5;
-      color: #c62828;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: auto;
-      padding: 25px 16px;
-    }
-
-    .hero {
-      background: linear-gradient(120deg, #fff0e5, #fff);
-      border-radius: 18px;
-      padding: 35px 25px;
-      margin-bottom: 25px;
-    }
-
-    .hero h1 {
-      font-size: 30px;
-      margin-bottom: 10px;
-    }
-
-    .hero p {
-      color: #666;
-      margin-bottom: 18px;
-    }
-
-    input, select, textarea {
-      width: 100%;
-      padding: 13px;
-      border: 1px solid #ddd;
-      border-radius: 9px;
-      font-size: 15px;
-      margin-top: 7px;
-      margin-bottom: 14px;
-      background: white;
-    }
-
-    textarea {
-      min-height: 90px;
-      resize: vertical;
-    }
-
-    label {
-      font-size: 14px;
-      font-weight: bold;
-    }
-
-    .search-area {
-      display: grid;
-      grid-template-columns: 1fr 200px;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .search-area input,
-    .search-area select {
-      margin: 0;
-    }
-
-    .section-title {
-      font-size: 22px;
-      margin: 25px 0 15px;
-    }
-
-    .books {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-      gap: 16px;
-    }
-
-    .book {
-      background: white;
-      border-radius: 13px;
-      overflow: hidden;
-      box-shadow: 0 2px 10px #0000000b;
-    }
-
-    .book img {
-      width: 100%;
-      height: 220px;
-      object-fit: cover;
-      background: #eee;
-    }
-
-    .book-info {
-      padding: 13px;
-    }
-
-    .book-info h3 {
-      font-size: 17px;
-      margin-bottom: 7px;
-    }
-
-    .muted {
-      color: #777;
-      font-size: 13px;
-      margin-bottom: 7px;
-    }
-
-    .price {
-      color: #f47721;
-      font-size: 19px;
-      font-weight: 900;
-      margin: 10px 0;
-    }
-
-    .book-actions {
-      display: flex;
-      gap: 7px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-    }
-
-    .book-actions button {
-      flex: 1;
-      padding: 9px 7px;
-    }
-
-    .panel {
-      background: white;
-      padding: 20px;
-      border-radius: 13px;
-      margin-bottom: 20px;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .tabs {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin: 20px 0;
-    }
-
-    .tabs button {
-      background: #eee;
-    }
-
-    .tabs button.active {
-      background: #f47721;
-      color: white;
-    }
-
-    .status {
-      padding: 12px;
-      border-radius: 9px;
-      margin-bottom: 15px;
-      background: #fff2e8;
-      color: #a94c0b;
-      font-size: 14px;
-    }
-
-    footer {
-      text-align: center;
-      padding: 30px 15px;
-      color: #888;
-      margin-top: 30px;
-    }
-
-    @media(max-width: 600px) {
-      .hero h1 {
-        font-size: 24px;
-      }
-
-      .search-area {
-        grid-template-columns: 1fr;
-      }
-
-      header {
-        padding: 13px;
-      }
-
-      .container {
-        padding: 17px 12px;
-      }
-    }
-  </style>
-</head>
-
-<body>
-
-<header>
-  <div class="logo">Book<span>Savdo</span></div>
-
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="secondary" onclick="showSection('home')">Bosh sahifa</button>
-    <button class="secondary" onclick="showSection('favorites')">♡ Sevimlilar</button>
-    <button class="secondary" onclick="showSection('profile')">Mening profilim</button>
-    <button class="primary" onclick="showSection('add')">+ Kitob sotish</button>
-  </div>
-</header>
-
-<main class="container">
-
-  <section id="homeSection">
-
-    <div class="hero">
-      <h1>Kitobga ikkinchi hayot!</h1>
-      <p>O‘qib bo‘lgan kitoblaringizni soting yoki o‘zingizga kerakli kitoblarni arzon narxda toping.</p>
-      <button class="primary" onclick="showSection('add')">Kitob joylash</button>
-    </div>
-
-    <div class="search-area">
-      <input id="searchInput" placeholder="Kitob nomi yoki muallifini qidiring..." oninput="renderBooks()">
-
-      <select id="categoryFilter" onchange="renderBooks()">
-        <option value="">Barcha kategoriyalar</option>
-        <option value="Badiiy">Badiiy</option>
-        <option value="Roman">Roman</option>
-        <option value="Tarix">Tarix</option>
-        <option value="Biznes">Biznes</option>
-        <option value="Psixologiya">Psixologiya</option>
-        <option value="Bolalar">Bolalar</option>
-        <option value="Darslik">Darslik</option>
-        <option value="Boshqa">Boshqa</option>
-      </select>
-    </div>
-
-    <h2 class="section-title">Yangi kitoblar</h2>
-    <div id="booksList" class="books">Yuklanmoqda...</div>
-
-  </section>
-
-  <section id="addSection" class="hidden">
-    <div class="panel">
-      <h2 class="section-title">Kitob joylash</h2>
-
-      <div id="addMessage" class="status hidden"></div>
-
-      <form id="bookForm">
-
-        <label>Kitob nomi</label>
-        <input id="bookTitle" required placeholder="Masalan: O‘tkan kunlar">
-
-        <label>Muallif</label>
-        <input id="bookAuthor" required placeholder="Muallif ismi">
-
-        <label>Narxi (so‘m)</label>
-        <input id="bookPrice" type="number" min="0" required placeholder="50000">
-
-        <label>Kategoriya</label>
-        <select id="bookCategory" required>
-          <option value="">Tanlang</option>
-          <option>Badiiy</option>
-          <option>Roman</option>
-          <option>Tarix</option>
-          <option>Biznes</option>
-          <option>Psixologiya</option>
-          <option>Bolalar</option>
-          <option>Darslik</option>
-          <option>Boshqa</option>
-        </select>
-
-        <label>Kitob holati</label>
-        <select id="bookCondition" required>
-          <option value="Yaxshi">Yaxshi</option>
-          <option value="Juda yaxshi">Juda yaxshi</option>
-          <option value="O‘rtacha">O‘rtacha</option>
-          <option value="Eski">Eski</option>
-        </select>
-
-        <label>Kitob haqida qisqacha ma’lumot</label>
-        <textarea id="bookDescription" placeholder="Kitob nima haqida?"></textarea>
-
-        <label>Shahar</label>
-        <input id="bookCity" placeholder="Masalan: Toshkent">
-
-        <label>Tuman</label>
-        <input id="bookDistrict" placeholder="Masalan: Chilonzor">
-
-        <label>Telefon raqam</label>
-        <input id="bookPhone" type="tel" placeholder="+998901234567">
-
-        <label>Telegram username</label>
-        <input id="bookTelegram" placeholder="username">
-
-        <label>Kitob rasmi</label>
-        <input id="bookImage" type="file" accept="image/*" required>
-
-        <button class="primary" type="submit" id="submitBook">
-          Kitobni joylash
-        </button>
-      </form>
-    </div>
-  </section>
-
-  <section id="favoritesSection" class="hidden">
-    <h2 class="section-title">Sevimli kitoblarim</h2>
-    <div id="favoritesList" class="books"></div>
-  </section>
-
-  <section id="profileSection" class="hidden">
-
-    <div class="panel">
-      <h2 class="section-title">Mening profilim</h2>
-
-      <div id="profileInfo"></div>
-
-      <div id="authArea">
-
-        <div class="tabs">
-          <button id="loginTab" class="active" onclick="showAuth('login')">Kirish</button>
-          <button id="registerTab" onclick="showAuth('register')">Ro‘yxatdan o‘tish</button>
-        </div>
-
-        <div id="authMessage" class="status hidden"></div>
-
-        <form id="authForm">
-
-          <div id="nameFields" class="hidden">
-            <label>Ism</label>
-            <input id="firstName" placeholder="Ismingiz">
-
-            <label>Familiya</label>
-            <input id="lastName" placeholder="Familiyangiz">
-          </div>
-
-          <label>Telefon raqam</label>
-          <input id="authPhone" type="tel" required placeholder="+998901234567">
-
-          <label>Parol</label>
-          <input id="authPassword" type="password" required minlength="6" placeholder="Kamida 6 ta belgi">
-
-          <button class="primary" type="submit" id="authSubmit">Kirish</button>
-        </form>
-
-      </div>
-
-      <div id="loggedInArea" class="hidden">
-        <button class="danger" onclick="logout()">Hisobdan chiqish</button>
-      </div>
-    </div>
-
-    <div class="panel">
-      <h2 class="section-title">Men joylagan kitoblar</h2>
-      <div id="myBooks" class="books">Avval tizimga kiring.</div>
-    </div>
-
-  </section>
-
-</main>
-
-<footer>
-  <b>BookSavdo</b>
-  <p>Kitobga ikkinchi hayot!</p>
-</footer>
-
-<script>
-const SUPABASE_URL = "https://lszzpfiptmgsjrrrkdwj.supabase.co";
-
-const SUPABASE_KEY = "sb_publishable_G72FGzaa4mFQe5PS77dZaQ_cZUlF3O5";
-
-const db = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+import {
+  Search, Heart, Plus, User, LogOut, Phone, Send,
+  Trash2, Pencil, Check, X, BookOpen, Menu,
+  ShoppingBag, MapPin, SlidersHorizontal, Camera
+} from "lucide-react";
+
+const supabase = createClient(
+  "https://lszzpfiptmgsjrrrkdwj.supabase.co",
+  "sb_publishable_G72FGzaa4mFQe5PS77dZaQ_cZUlF3O5"
 );
 
-let currentUser = null;
-let currentProfile = null;
-let allBooks = [];
-let authMode = "login";
+type Book = {
+  id: string;
+  title: string;
+  author: string;
+  price: number;
+  cat: string;
+  cond: string;
+  contact: string | null;
+  seller_id: string | null;
+  user_id: string | null;
+  image_url: string | null;
+  description: string | null;
+  city: string | null;
+  district: string | null;
+  phone: string | null;
+  telegram: string | null;
+  is_sold: boolean;
+};
 
-const $ = id => document.getElementById(id);
+const categories = [
+  "Barchasi", "Badiiy adabiyot", "Tarix", "Biznes",
+  "Psixologiya", "Diniy kitoblar", "Bolalar kitoblari",
+  "Darsliklar", "Ilmiy kitoblar", "Boshqa"
+];
 
-function esc(value) {
-  return String(value ?? "").replace(/[&<>"']/g, char => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#039;"
-  })[char]);
+const conditions = ["A'lo", "Yaxshi", "O'rtacha"];
+
+const styles = `
+*{box-sizing:border-box}
+body{margin:0;background:#f5f6fa;color:#172033;font-family:Arial,sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.header{background:#101828;color:white;padding:16px 5%;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:10}
+.logo{font-size:25px;font-weight:900;color:#ff9d24}
+.logo span{color:white}
+.nav{display:flex;gap:18px;align-items:center}
+.nav button{background:none;border:0;color:white;font-weight:600}
+.container{max-width:1200px;margin:auto;padding:25px 18px}
+.hero{background:linear-gradient(120deg,#17243c,#273e62);border-radius:22px;color:white;padding:38px 30px;margin-bottom:25px}
+.hero h1{font-size:34px;margin:0 0 12px}
+.hero p{color:#d5deed;line-height:1.6}
+.search{display:flex;background:white;border-radius:12px;padding:5px;max-width:650px;margin-top:20px}
+.search input{border:0;outline:0;flex:1;min-width:0;padding:12px}
+.primary{background:#ff941f;color:#172033;border:0;padding:12px 18px;border-radius:10px;font-weight:800}
+.secondary{background:#e9edf4;color:#172033;border:0;padding:11px 15px;border-radius:10px;font-weight:700}
+.filters{display:flex;gap:9px;overflow-x:auto;padding:10px 0 20px}
+.filters button{white-space:nowrap;border:1px solid #e0e4ec;background:white;padding:10px 14px;border-radius:30px}
+.filters button.active{background:#17243c;color:white}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+.book{background:white;border-radius:16px;overflow:hidden;border:1px solid #e8ebf1;box-shadow:0 5px 18px #15233a0b}
+.book img{width:100%;height:220px;object-fit:cover;background:#edf0f5}
+.bookbody{padding:14px}
+.book h3{margin:0 0 7px;font-size:17px}
+.muted{color:#788397;font-size:13px}
+.price{font-size:20px;font-weight:900;color:#f08a18;margin:12px 0}
+.bookactions{display:flex;gap:8px;align-items:center}
+.bookactions button{flex:1}
+.heart{background:#fff0e0;color:#ec8b20;border:0;border-radius:9px;padding:10px}
+.sectiontitle{display:flex;align-items:center;justify-content:space-between;margin:24px 0 15px}
+.panel{background:white;border:1px solid #e5e9f0;border-radius:16px;padding:20px;margin-bottom:20px}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.field{display:flex;flex-direction:column;gap:7px}
+.field label{font-size:13px;font-weight:700;color:#46536a}
+.field input,.field select,.field textarea{width:100%;padding:12px;border:1px solid #dce1e9;border-radius:9px;outline:none;background:white}
+.field textarea{min-height:90px;resize:vertical}
+.full{grid-column:1/-1}
+.modalback{position:fixed;inset:0;background:#10182899;z-index:30;display:flex;align-items:center;justify-content:center;padding:15px}
+.modal{background:white;border-radius:18px;width:100%;max-width:550px;max-height:90vh;overflow:auto;padding:22px}
+.modalhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.modalhead button{border:0;background:#edf0f5;border-radius:8px;padding:8px}
+.auth{max-width:430px}
+.empty{text-align:center;padding:50px 15px;color:#7b8494}
+.badge{display:inline-block;padding:5px 9px;border-radius:20px;background:#e9f7ef;color:#16834a;font-size:12px;font-weight:bold}
+.sold{background:#fff0f0;color:#c34444}
+.footer{background:#101828;color:#c9d2df;padding:30px 5%;margin-top:50px;text-align:center}
+@media(max-width:650px){
+.header{padding:13px 15px}.nav{gap:8px}.nav button{font-size:12px}
+.hero{padding:25px 18px}.hero h1{font-size:27px}
+.container{padding:18px 12px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.book img{height:155px}.bookbody{padding:10px}.book h3{font-size:14px}
+.price{font-size:17px}.formgrid{grid-template-columns:1fr}
+.full{grid-column:auto}.desktop{display:none}
 }
+`;
 
-function money(value) {
-  return Number(value || 0).toLocaleString("uz-UZ") + " so‘m";
-}
+export default function Home() {
+  const [books, setBooks] = useState<Book[]>([]);
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("Barchasi");
+  const [page, setPage] = useState("home");
+  const [modal, setModal] = useState("");
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [editing, setEditing] = useState<Book | null>(null);
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
 
-function showMessage(id, message) {
-  const box = $(id);
-  box.textContent = message;
-  box.classList.remove("hidden");
-}
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginName, setLoginName] = useState("");
 
-function hideMessage(id) {
-  $(id).classList.add("hidden");
-}
+  const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
+  const [price, setPrice] = useState("");
+  const [cat, setCat] = useState("Badiiy adabiyot");
+  const [cond, setCond] = useState("Yaxshi");
+  const [description, setDescription] = useState("");
+  const [city, setCity] = useState("");
+  const [district, setDistrict] = useState("");
+  const [phone, setPhone] = useState("");
+  const [telegram, setTelegram] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
 
-function showSection(section) {
-  [
-    "homeSection",
-    "addSection",
-    "favoritesSection",
-    "profileSection"
-  ].forEach(id => $(id).classList.add("hidden"));
+  useEffect(() => {
+    const saved = localStorage.getItem("booksavdo_favorites");
+    if (saved) setFavorites(JSON.parse(saved));
 
-  $(section + "Section").classList.remove("hidden");
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null);
+      setLoading(false);
+    });
 
-  if (section === "favorites") renderFavorites();
-  if (section === "profile") loadProfile();
-  if (section === "add" && !currentUser) {
-    showSection("profile");
-    showMessage("authMessage", "Kitob joylash uchun avval hisobingizga kiring.");
-  }
-}
-
-function showAuth(mode) {
-  authMode = mode;
-
-  $("nameFields").classList.toggle("hidden", mode !== "register");
-
-  $("loginTab").classList.toggle("active", mode === "login");
-  $("registerTab").classList.toggle("active", mode === "register");
-
-  $("authSubmit").textContent =
-    mode === "login" ? "Kirish" : "Ro‘yxatdan o‘tish";
-
-  hideMessage("authMessage");
-}
-
-function normalizePhone(phone) {
-  let value = phone.replace(/\s+/g, "").replace(/-/g, "");
-
-  if (value.startsWith("00")) {
-    value = "+" + value.slice(2);
-  }
-
-  if (value.startsWith("998")) {
-    value = "+" + value;
-  }
-
-  if (value.startsWith("0") && value.length === 10) {
-    value = "+998" + value.slice(1);
-  }
-
-  return value;
-}
-
-$("authForm").addEventListener("submit", async event => {
-  event.preventDefault();
-
-  hideMessage("authMessage");
-
-  const phone = normalizePhone($("authPhone").value);
-  const password = $("authPassword").value;
-
-  if (!/^\+998\d{9}$/.test(phone)) {
-    showMessage("authMessage", "Telefon raqamni +998901234567 ko‘rinishida kiriting.");
-    return;
-  }
-
-  $("authSubmit").disabled = true;
-  $("authSubmit").textContent = "Kutilmoqda...";
-
-  try {
-    let result;
-
-    if (authMode === "register") {
-      const firstName = $("firstName").value.trim();
-      const lastName = $("lastName").value.trim();
-
-      if (!firstName || !lastName) {
-        throw new Error("Ism va familiyangizni kiriting.");
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
       }
+    );
 
-      result = await db.auth.signUp({
-        phone,
-        password,
-        options: {
-          data: {
-            first_name: firstName,
-            last_name: lastName
-          }
-        }
-      });
+    loadBooks();
 
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      setProfile(user.user_metadata);
     } else {
-      result = await db.auth.signInWithPassword({
-        phone,
-        password
-      });
+      setProfile(null);
     }
+  }, [user]);
 
-    if (result.error) throw result.error;
+  async function loadBooks() {
+    const { data, error } = await supabase
+      .from("books")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-    if (authMode === "register" && !result.data.session) {
-      showMessage(
-        "authMessage",
-        "Ro‘yxatdan o‘tish so‘rovi yuborildi. Supabase telefon tasdiqlashni talab qilmoqda. Phone provider va Confirm phone sozlamalarini tekshiring."
-      );
+    if (error) {
+      setMessage("Kitoblarni yuklashda xatolik: " + error.message);
+    } else {
+      setBooks((data || []) as Book[]);
+    }
+  }
+
+  function toggleFavorite(id: string) {
+    const next = favorites.includes(id)
+      ? favorites.filter(x => x !== id)
+      : [...favorites, id];
+
+    setFavorites(next);
+    localStorage.setItem("booksavdo_favorites", JSON.stringify(next));
+  }
+
+  // Ism va familiyadan avtomatik login yaratish.
+  // Ro'yxatdan o'tgach, login foydalanuvchiga ko'rsatiladi.
+  function makeLogin() {
+    const random = Math.random().toString(36).slice(2, 8);
+    const clean = (firstName + lastName)
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+    return clean + random;
+  }
+
+  async function register() {
+    if (!firstName.trim() || !lastName.trim() || password.length < 6) {
+      setMessage("Ism, familiya va kamida 6 belgili parol kiriting.");
       return;
     }
 
-    currentUser = result.data.user;
-    currentProfile = currentUser.user_metadata || {};
+    setBusy(true);
+    const username = makeLogin();
+    const email = username + "@booksavdo.com";
 
-    showMessage("authMessage", "Muvaffaqiyatli!");
-
-    await loadProfile();
-    await loadBooks();
-
-  } catch (error) {
-    showMessage("authMessage", error.message || "Xatolik yuz berdi.");
-  } finally {
-    $("authSubmit").disabled = false;
-    $("authSubmit").textContent =
-      authMode === "login" ? "Kirish" : "Ro‘yxatdan o‘tish";
-  }
-});
-
-async function logout() {
-  const { error } = await db.auth.signOut();
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  currentUser = null;
-  currentProfile = null;
-
-  await loadProfile();
-  await loadBooks();
-
-  showSection("home");
-}
-
-async function loadProfile() {
-  const { data } = await db.auth.getUser();
-
-  currentUser = data.user || null;
-  currentProfile = currentUser?.user_metadata || null;
-
-  if (currentUser) {
-    $("authArea").classList.add("hidden");
-    $("loggedInArea").classList.remove("hidden");
-
-    $("profileInfo").innerHTML = `
-      <p><b>Ism:</b> ${esc(currentProfile?.first_name || "")}</p>
-      <p><b>Familiya:</b> ${esc(currentProfile?.last_name || "")}</p>
-      <p><b>Telefon:</b> ${esc(currentUser.phone || "")}</p>
-    `;
-
-    await loadMyBooks();
-
-  } else {
-    $("authArea").classList.remove("hidden");
-    $("loggedInArea").classList.add("hidden");
-
-    $("profileInfo").innerHTML = "<p>Hisobingizga kiring yoki yangi hisob yarating.</p>";
-    $("myBooks").textContent = "Avval tizimga kiring.";
-  }
-}
-
-async function uploadImage(file) {
-  if (!currentUser) throw new Error("Avval tizimga kiring.");
-
-  const extension = file.name.split(".").pop().toLowerCase();
-  const safeExtension = /^[a-z0-9]+$/.test(extension) ? extension : "jpg";
-  const path = currentUser.id + "/" + crypto.randomUUID() + "." + safeExtension;
-
-  const { error } = await db.storage
-    .from("book-images")
-    .upload(path, file, {
-      cacheControl: "3600",
-      upsert: false,
-      contentType: file.type
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          username
+        }
+      }
     });
 
-  if (error) throw error;
+    setBusy(false);
 
-  const { data } = db.storage
-    .from("book-images")
-    .getPublicUrl(path);
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
 
-  return data.publicUrl;
-}
-
-$("bookForm").addEventListener("submit", async event => {
-  event.preventDefault();
-
-  hideMessage("addMessage");
-
-  if (!currentUser) {
-    showMessage("addMessage", "Avval tizimga kiring.");
-    return;
+    if (data.session) {
+      setUser(data.user);
+      setMessage("Ro'yxatdan o'tdingiz! Login: " + username);
+      setModal("");
+    } else {
+      setMessage("Hisob yaratildi, lekin tasdiqlash talab qilinyapti. Supabase Email Confirm sozlamasini o'chiring.");
+    }
   }
 
-  const file = $("bookImage").files[0];
+  async function login() {
+    if (!loginName.trim() || !password) {
+      setMessage("Login va parolni kiriting.");
+      return;
+    }
 
-  if (!file) {
-    showMessage("addMessage", "Kitob rasmini tanlang.");
-    return;
+    setBusy(true);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: loginName.trim().toLowerCase() + "@booksavdo.com",
+      password
+    });
+    setBusy(false);
+
+    if (error) {
+      setMessage("Login yoki parol noto'g'ri.");
+      return;
+    }
+
+    setUser(data.user);
+    setModal("");
+    setPassword("");
+    setMessage("Xush kelibsiz!");
   }
 
-  if (!file.type.startsWith("image/")) {
-    showMessage("addMessage", "Faqat rasm faylini tanlang.");
-    return;
+  async function logout() {
+    await supabase.auth.signOut();
+    setUser(null);
+    setPage("home");
+    setMessage("Hisobdan chiqdingiz.");
   }
 
-  if (file.size > 5 * 1024 * 1024) {
-    showMessage("addMessage", "Rasm hajmi 5 MB dan oshmasligi kerak.");
-    return;
+  function resetBookForm() {
+    setTitle("");
+    setAuthor("");
+    setPrice("");
+    setCat("Badiiy adabiyot");
+    setCond("Yaxshi");
+    setDescription("");
+    setCity("");
+    setDistrict("");
+    setPhone("");
+    setTelegram("");
+    setPhoto(null);
+    setEditing(null);
   }
 
-  $("submitBook").disabled = true;
-  $("submitBook").textContent = "Yuklanmoqda...";
+  async function saveBook(e: React.FormEvent) {
+    e.preventDefault();
 
-  try {
-    const imageUrl = await uploadImage(file);
+    if (!user) {
+      setMessage("Avval hisobingizga kiring.");
+      setModal("login");
+      return;
+    }
 
-    const book = {
-      title: $("bookTitle").value.trim(),
-      author: $("bookAuthor").value.trim(),
-      price: Number($("bookPrice").value),
-      cat: $("bookCategory").value,
-      cond: $("bookCondition").value,
-      description: $("bookDescription").value.trim(),
-      city: $("bookCity").value.trim(),
-      district: $("bookDistrict").value.trim(),
-      phone: $("bookPhone").value.trim(),
-      telegram: $("bookTelegram").value.trim().replace("@", ""),
-      contact: $("bookPhone").value.trim(),
-      seller_id: currentUser.id,
-      user_id: currentUser.id,
-      image_url: imageUrl,
-      is_sold: false
+    if (!title || !author || !price || !phone || !city) {
+      setMessage("Kitob nomi, muallifi, narxi, telefon va shahar majburiy.");
+      return;
+    }
+
+    setBusy(true);
+    let image_url = editing?.image_url || null;
+
+    if (photo) {
+      const ext = photo.name.split(".").pop() || "jpg";
+      const path = `${user.id}/${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("book-images")
+        .upload(path, photo, { upsert: true });
+
+      if (uploadError) {
+        setBusy(false);
+        setMessage("Rasm yuklanmadi: " + uploadError.message);
+        return;
+      }
+
+      const { data } = supabase.storage
+        .from("book-images")
+        .getPublicUrl(path);
+
+      image_url = data.publicUrl;
+    }
+
+    const bookData = {
+      title,
+      author,
+      price: Number(price),
+      cat,
+      cond,
+      description,
+      city,
+      district,
+      phone,
+      telegram,
+      image_url,
+      user_id: user.id,
+      seller_id: user.id,
+      contact: phone
     };
 
-    const { error } = await db.from("books").insert(book);
+    let result;
 
-    if (error) throw error;
+    if (editing) {
+      result = await supabase
+        .from("books")
+        .update(bookData)
+        .eq("id", editing.id)
+        .eq("user_id", user.id);
+    } else {
+      result = await supabase.from("books").insert(bookData);
+    }
 
-    $("bookForm").reset();
+    setBusy(false);
 
-    showMessage("addMessage", "Kitobingiz muvaffaqiyatli joylandi!");
+    if (result.error) {
+      setMessage("Saqlashda xatolik: " + result.error.message);
+      return;
+    }
 
+    setModal("");
+    resetBookForm();
     await loadBooks();
-    await loadMyBooks();
-
-    showSection("home");
-
-  } catch (error) {
-    showMessage("addMessage", "Xatolik: " + error.message);
-  } finally {
-    $("submitBook").disabled = false;
-    $("submitBook").textContent = "Kitobni joylash";
-  }
-});
-
-async function loadBooks() {
-  $("booksList").textContent = "Yuklanmoqda...";
-
-  const { data, error } = await db
-    .from("books")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    $("booksList").textContent = "Xatolik: " + error.message;
-    return;
+    setPage("mybooks");
+    setMessage(editing ? "E'lon yangilandi!" : "Kitob joylandi!");
   }
 
-  allBooks = data || [];
-  renderBooks();
-}
+  function startEdit(book: Book) {
+    setEditing(book);
+    setTitle(book.title);
+    setAuthor(book.author);
+    setPrice(String(book.price));
+    setCat(book.cat);
+    setCond(book.cond);
+    setDescription(book.description || "");
+    setCity(book.city || "");
+    setDistrict(book.district || "");
+    setPhone(book.phone || "");
+    setTelegram(book.telegram || "");
+    setPhoto(null);
+    setModal("add");
+  }
 
-function bookCard(book) {
-  const image = book.image_url || "";
+  async function deleteBook(book: Book) {
+    if (!confirm("Bu e'lonni o'chirmoqchimisiz?")) return;
 
-  const phone = book.phone || book.contact || "";
-  const telegram = (book.telegram || "").replace("@", "");
+    const { error } = await supabase
+      .from("books")
+      .delete()
+      .eq("id", book.id)
+      .eq("user_id", user.id);
 
-  const isFavorite = getFavorites().includes(book.id);
+    if (error) {
+      setMessage(error.message);
+    } else {
+      setMessage("E'lon o'chirildi.");
+      loadBooks();
+    }
+  }
 
-  const location = [book.city, book.district]
-    .filter(Boolean)
-    .map(esc)
-    .join(", ");
+  async function markSold(book: Book) {
+    const { error } = await supabase
+      .from("books")
+      .update({ is_sold: !book.is_sold })
+      .eq("id", book.id)
+      .eq("user_id", user.id);
 
-  return `
-    <article class="book">
+    if (error) setMessage(error.message);
+    else loadBooks();
+  }
 
-      <img
-        src="${esc(image)}"
-        alt="${esc(book.title)}"
-        onerror="this.src='https://placehold.co/400x300?text=BookSavdo'"
-      >
+  const visibleBooks = useMemo(() => {
+    return books.filter(book => {
+      const matchesSearch =
+        (book.title || "").toLowerCase().includes(search.toLowerCase()) ||
+        (book.author || "").toLowerCase().includes(search.toLowerCase());
 
-      <div class="book-info">
+      const matchesCategory =
+        category === "Barchasi" || book.cat === category;
 
-        <h3>${esc(book.title)}</h3>
+      const matchesPage =
+        page === "favorites"
+          ? favorites.includes(book.id)
+          : page === "mybooks"
+          ? book.user_id === user?.id
+          : true;
 
-        <p class="muted">${esc(book.author)}</p>
+      return matchesSearch && matchesCategory && matchesPage;
+    });
+  }, [books, search, category, page, favorites, user]);
 
-        <p class="price">${money(book.price)}</p>
+  function BookCard({ book }: { book: Book }) {
+    const own = user?.id === book.user_id;
 
-        <p class="muted">Kategoriya: ${esc(book.cat)}</p>
-        <p class="muted">Holati: ${esc(book.cond)}</p>
+    return (
+      <article className="book">
+        {book.image_url ? (
+          <img src={book.image_url} alt={book.title} />
+        ) : (
+          <div style={{
+            height: 220, display: "grid", placeItems: "center",
+            background: "#edf0f5", color: "#8993a5"
+          }}>
+            <BookOpen size={45} />
+          </div>
+        )}
 
-        ${location ? `<p class="muted">📍 ${location}</p>` : ""}
+        <div className="bookbody">
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span className="muted">{book.cat}</span>
+            <button className="heart" onClick={() => toggleFavorite(book.id)}>
+              <Heart size={17} fill={favorites.includes(book.id) ? "#ec8b20" : "none"} />
+            </button>
+          </div>
 
-        ${book.is_sold ? `<p style="color:red;font-weight:bold">Sotilgan</p>` : ""}
+          <h3>{book.title}</h3>
+          <div className="muted">{book.author}</div>
+          <div className="price">
+            {Number(book.price).toLocaleString("uz-UZ")} so'm
+          </div>
 
-        <div class="book-actions">
-          <button class="secondary" onclick="showDetails('${book.id}')">Batafsil</button>
+          <div className="muted">
+            {book.city}{book.district ? ", " + book.district : ""}
+          </div>
 
-          <button class="secondary" onclick="toggleFavorite('${book.id}')">
-            ${isFavorite ? "♥" : "♡"}
-          </button>
+          <div style={{ margin: "10px 0" }}>
+            {book.is_sold
+              ? <span className="badge sold">Sotilgan</span>
+              : <span className="badge">{book.cond}</span>}
+          </div>
+
+          {book.description && (
+            <p className="muted">{book.description}</p>
+          )}
+
+          {own ? (
+            <div className="bookactions">
+              <button className="secondary" onClick={() => startEdit(book)}>
+                <Pencil size={15} />
+              </button>
+              <button className="secondary" onClick={() => markSold(book)}>
+                <Check size={15} />
+              </button>
+              <button className="secondary" onClick={() => deleteBook(book)}>
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ) : (
+            <div className="bookactions">
+              {book.phone && (
+                <a
+                  href={`tel:${book.phone}`}
+                  className="primary"
+                  style={{ textDecoration: "none", textAlign: "center", flex: 1 }}
+                >
+                  <Phone size={15} /> Qo'ng'iroq
+                </a>
+              )}
+              {book.telegram && (
+                <a
+                  href={`https://t.me/${book.telegram.replace("@", "")}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="secondary"
+                  style={{ textDecoration: "none", textAlign: "center", flex: 1 }}
+                >
+                  <Send size={15} /> Telegram
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      </article>
+    );
+  }
+
+  return (
+    <>
+      <style>{styles}</style>
+
+      <header className="header">
+        <div className="logo">Book<span>Savdo</span></div>
+
+        <nav className="nav">
+          <button onClick={() => setPage("home")}>Bosh sahifa</button>
+          {user && (
+            <>
+              <button className="desktop" onClick={() => setPage("mybooks")}>E'lonlarim</button>
+              <button className="desktop" onClick={() => setPage("favorites")}>Sevimlilar</button>
+            </>
+          )}
+        </nav>
+
+        {user ? (
+          <div className="nav">
+            <button onClick={() => setPage("mybooks")}><User size={18} /></button>
+            <button onClick={logout}><LogOut size={18} /></button>
+          </div>
+        ) : (
+          <div className="nav">
+            <button onClick={() => setModal("login")}>Kirish</button>
+            <button className="primary" onClick={() => setModal("register")}>Ro'yxatdan o'tish</button>
+          </div>
+        )}
+      </header>
+
+      <main className="container">
+        {page === "home" && (
+          <section className="hero">
+            <h1>Sevimli kitobingizni toping!</h1>
+            <p>O'qilgan kitoblarga ikkinchi hayot bering. Kitoblarni arzon narxlarda toping yoki o'zingiz soting.</p>
+
+            <div className="search">
+              <Search color="#7b8494" />
+              <input
+                placeholder="Kitob yoki muallif nomini qidiring..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+          </section>
+        )}
+
+        <div className="sectiontitle">
+          <div>
+            <h2 style={{ margin: 0 }}>
+              {page === "mybooks" ? "Mening e'lonlarim"
+                : page === "favorites" ? "Sevimli kitoblarim"
+                : "Kitoblar"}
+            </h2>
+            <span className="muted">{visibleBooks.length} ta kitob</span>
+          </div>
+
+          {user && (
+            <button className="primary" onClick={() => {
+              resetBookForm();
+              setModal("add");
+            }}>
+              <Plus size={17} /> Kitob joylash
+            </button>
+          )}
         </div>
 
-        ${!book.is_sold && phone ? `
-          <div class="book-actions">
-            <button class="primary" onclick="callSeller('${esc(phone)}')">Qo‘ng‘iroq</button>
+        <div className="filters">
+          {categories.map(c => (
+            <button
+              key={c}
+              className={category === c ? "active" : ""}
+              onClick={() => setCategory(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+
+        {loading ? (
+          <div className="empty">Yuklanmoqda...</div>
+        ) : visibleBooks.length ? (
+          <div className="grid">
+            {visibleBooks.map(book => <BookCard key={book.id} book={book} />)}
           </div>
-        ` : ""}
-
-        ${!book.is_sold && telegram ? `
-          <div class="book-actions">
-            <button class="secondary" onclick="openTelegram('${esc(telegram)}')">Telegram</button>
+        ) : (
+          <div className="empty">
+            <BookOpen size={45} />
+            <h3>Hozircha kitob topilmadi</h3>
+            <p>Boshqa so'z bilan qidirib ko'ring.</p>
           </div>
-        ` : ""}
+        )}
+      </main>
 
-      </div>
-    </article>
-  `;
-}
+      <footer className="footer">
+        <div className="logo">Book<span>Savdo</span></div>
+        <p>Kitobga ikkinchi hayot!</p>
+        <small>© 2026 BookSavdo</small>
+      </footer>
 
-function renderBooks() {
-  const search = $("searchInput").value.toLowerCase().trim();
-  const category = $("categoryFilter").value;
+      {message && (
+        <div className="modalback" onClick={() => setMessage("")}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modalhead">
+              <b>BookSavdo xabari</b>
+              <button onClick={() => setMessage("")}><X /></button>
+            </div>
+            <p>{message}</p>
+            <button className="primary" onClick={() => setMessage("")}>Yopish</button>
+          </div>
+        </div>
+      )}
 
-  const filtered = allBooks.filter(book => {
-    const matchesSearch =
-      (book.title || "").toLowerCase().includes(search) ||
-      (book.author || "").toLowerCase().includes(search);
+      {modal && (
+        <div className="modalback" onClick={() => setModal("")}>
+          <div className={`modal ${modal === "register" || modal === "login" ? "auth" : ""}`}
+            onClick={e => e.stopPropagation()}>
 
-    const matchesCategory =
-      !category || book.cat === category;
+            <div className="modalhead">
+              <h2 style={{ margin: 0 }}>
+                {modal === "register" ? "Ro'yxatdan o'tish"
+                  : modal === "login" ? "Hisobga kirish"
+                  : editing ? "E'lonni tahrirlash" : "Kitob joylash"}
+              </h2>
+              <button onClick={() => setModal("")}><X /></button>
+            </div>
 
-    return matchesSearch && matchesCategory;
-  });
+            {(modal === "register" || modal === "login") && (
+              <>
+                {modal === "register" ? (
+                  <>
+                    <div className="field" style={{ marginBottom: 12 }}>
+                      <label>Ism</label>
+                      <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Ismingiz" />
+                    </div>
+                    <div className="field" style={{ marginBottom: 12 }}>
+                      <label>Familiya</label>
+                      <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Familiyangiz" />
+                    </div>
+                  </>
+                ) : (
+                  <div className="field" style={{ marginBottom: 12 }}>
+                    <label>Login</label>
+                    <input value={loginName} onChange={e => setLoginName(e.target.value)} placeholder="Ro'yxatdan o'tganda berilgan login" />
+                  </div>
+                )}
 
-  $("booksList").innerHTML = filtered.length
-    ? filtered.map(bookCard).join("")
-    : "<p>Hozircha kitob topilmadi.</p>";
-}
+                <div className="field" style={{ marginBottom: 16 }}>
+                  <label>Parol (kamida 6 belgi)</label>
+                  <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Parol" />
+                </div>
 
-function getFavorites() {
-  try {
-    return JSON.parse(localStorage.getItem("booksavdo_favorites") || "[]");
-  } catch {
-    return [];
-  }
-}
+                <button className="primary" style={{ width: "100%" }} disabled={busy}
+                  onClick={modal === "register" ? register : login}>
+                  {busy ? "Kutib turing..." : modal === "register" ? "Hisob yaratish" : "Kirish"}
+                </button>
 
-function toggleFavorite(id) {
-  let favorites = getFavorites();
+                <p className="muted" style={{ marginTop: 15 }}>
+                  {modal === "register" ? "Hisobingiz bormi?" : "Hisobingiz yo'qmi?"}
+                  {" "}
+                  <button style={{ border: 0, background: "none", color: "#ed8b20", fontWeight: 800 }}
+                    onClick={() => {
+                      setPassword("");
+                      setModal(modal === "register" ? "login" : "register");
+                    }}>
+                    {modal === "register" ? "Kirish" : "Ro'yxatdan o'tish"}
+                  </button>
+                </p>
+              </>
+            )}
 
-  if (favorites.includes(id)) {
-    favorites = favorites.filter(item => item !== id);
-  } else {
-    favorites.push(id);
-  }
+            {modal === "add" && (
+              <form onSubmit={saveBook}>
+                <div className="formgrid">
+                  <div className="field full">
+                    <label>Kitob rasmi</label>
+                    <input type="file" accept="image/*" onChange={e => setPhoto(e.target.files?.[0] || null)} />
+                    {editing?.image_url && !photo && (
+                      <img src={editing.image_url} style={{ width: 100, height: 100, objectFit: "cover" }} />
+                    )}
+                  </div>
 
-  localStorage.setItem("booksavdo_favorites", JSON.stringify(favorites));
+                  <div className="field">
+                    <label>Kitob nomi *</label>
+                    <input value={title} onChange={e => setTitle(e.target.value)} required />
+                  </div>
+                  <div className="field">
+                    <label>Muallifi *</label>
+                    <input value={author} onChange={e => setAuthor(e.target.value)} required />
+                  </div>
+                  <div className="field">
+                    <label>Narxi (so'm) *</label>
+                    <input type="number" min="0" value={price} onChange={e => setPrice(e.target.value)} required />
+                  </div>
+                  <div className="field">
+                    <label>Bo'lim</label>
+                    <select value={cat} onChange={e => setCat(e.target.value)}>
+                      {categories.filter(x => x !== "Barchasi").map(x => <option key={x}>{x}</option>)}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Kitob holati</label>
+                    <select value={cond} onChange={e => setCond(e.target.value)}>
+                      {conditions.map(x => <option key={x}>{x}</option>)}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Shahar *</label>
+                    <input value={city} onChange={e => setCity(e.target.value)} required />
+                  </div>
+                  <div className="field">
+                    <label>Tuman</label>
+                    <input value={district} onChange={e => setDistrict(e.target.value)} />
+                  </div>
+                  <div className="field">
+                    <label>Telefon raqami *</label>
+                    <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+998..." required />
+                  </div>
+                  <div className="field">
+                    <label>Telegram (ixtiyoriy)</label>
+                    <input value={telegram} onChange={e => setTelegram(e.target.value)} placeholder="@username" />
+                  </div>
+                  <div className="field full">
+                    <label>Kitob haqida qisqacha</label>
+                    <textarea value={description} onChange={e => setDescription(e.target.value)} />
+                  </div>
+                </div>
 
-  renderBooks();
-  renderFavorites();
-}
-
-function renderFavorites() {
-  const favorites = getFavorites();
-
-  const books = allBooks.filter(book =>
-    favorites.includes(book.id)
+                <button className="primary" style={{ width: "100%", marginTop: 18 }} disabled={busy}>
+                  {busy ? "Saqlanmoqda..." : editing ? "O'zgarishlarni saqlash" : "Kitobni joylash"}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
-
-  $("favoritesList").innerHTML = books.length
-    ? books.map(bookCard).join("")
-    : "<p>Hozircha sevimli kitoblar yo‘q.</p>";
 }
-
-function callSeller(phone) {
-  const cleanPhone = phone.replace(/[^\d+]/g, "");
-  if (cleanPhone) location.href = "tel:" + cleanPhone;
-}
-
-function openTelegram(username) {
-  const cleanUsername = username.replace(/[^a-zA-Z0-9_]/g, "");
-  if (cleanUsername) {
-    window.open("https://t.me/" + cleanUsername, "_blank");
-  }
-}
-
-function showDetails(id) {
-  const book = allBooks.find(item => item.id === id);
-
-  if (!book) return;
-
-  const description = book.description || "Ma’lumot kiritilmagan.";
-  const locationText = [book.city, book.district].filter(Boolean).join(", ");
-
-  alert(
-    "Kitob: " + book.title +
-    "\nMuallif: " + book.author +
-    "\nNarxi: " + money(book.price) +
-    "\nHolati: " + book.cond +
-    "\nJoylashuv: " + locationText +
-    "\n\nKitob haqida:\n" + description
-  );
-}
-
-async function loadMyBooks() {
-  if (!currentUser) return;
-
-  const box = $("myBooks");
-  box.textContent = "Yuklanmoqda...";
-
-  const { data, error } = await db
-    .from("books")
-    .select("*")
-    .eq("user_id", currentUser.id)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    box.textContent = error.message;
-    return;
-  }
-
-  if (!data || !data.length) {
-    box.innerHTML = "<p>Siz hali kitob joylamagansiz.</p>";
-    return;
-  }
-
-  box.innerHTML = data.map(book => `
-    <div class="panel">
-
-      <b>${esc(book.title)}</b>
-
-      <p class="price">${money(book.price)}</p>
-
-      <p class="muted">${esc(book.author)}</p>
-
-      <p>${book.is_sold ? "Sotilgan" : "Sotuvda"}</p>
-
-      <div class="book-actions">
-
-        <button class="secondary"
-          onclick="editBook('${book.id}')">
-          Tahrirlash
-        </button>
-
-        <button class="secondary"
-          onclick="toggleSold('${book.id}', ${!book.is_sold})">
-          ${book.is_sold ? "Qayta sotuvga qo‘yish" : "Sotildi"}
-        </button>
-
-        <button class="danger"
-          onclick="deleteBook('${book.id}')">
-          O‘chirish
-        </button>
-
-      </div>
-    </div>
-  `).join("");
-}
-
-async function editBook(id) {
-  const book = allBooks.find(item => item.id === id);
-
-  if (!book || book.user_id !== currentUser?.id) {
-    alert("Bu kitobni tahrirlash huquqingiz yo‘q.");
-    return;
-  }
-
-  const title = prompt("Kitob nomi:", book.title);
-  if (title === null) return;
-
-  const author = prompt("Muallif:", book.author);
-  if (author === null) return;
-
-  const price = prompt("Narxi:", book.price);
-  if (price === null) return;
-
-  if (!title.trim() || !author.trim() || !Number.isFinite(Number(price)) || Number(price) < 0) {
-    alert("Ma’lumotlarni to‘g‘ri kiriting.");
-    return;
-  }
-
-  const { error } = await db
-    .from("books")
-    .update({
-      title: title.trim(),
-      author: author.trim(),
-      price: Number(price)
-    })
-    .eq("id", id)
-    .eq("user_id", currentUser.id);
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  alert("Kitob yangilandi.");
-
-  await loadBooks();
-  await loadMyBooks();
-}
-
-async function toggleSold(id, sold) {
-  if (!currentUser) return;
-
-  const { error } = await db
-    .from("books")
-    .update({ is_sold: sold })
-    .eq("id", id)
-    .eq("user_id", currentUser.id);
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  await loadBooks();
-  await loadMyBooks();
-}
-
-async function deleteBook(id) {
-  if (!currentUser) return;
-
-  const confirmed = confirm("Bu kitobni o‘chirmoqchimisiz?");
-
-  if (!confirmed) return;
-
-  const { error } = await db
-    .from("books")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", currentUser.id);
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  alert("Kitob o‘chirildi.");
-
-  await loadBooks();
-  await loadMyBooks();
-}
-
-db.auth.onAuthStateChange((_event, session) => {
-  currentUser = session?.user || null;
-  currentProfile = currentUser?.user_metadata || null;
-
-  setTimeout(async () => {
-    await loadProfile();
-  }, 0);
-});
-
-async function startApp() {
-  const { data } = await db.auth.getSession();
-
-  currentUser = data.session?.user || null;
-  currentProfile = currentUser?.user_metadata || null;
-
-  await loadBooks();
-  await loadProfile();
-}
-
-startApp();
-
-</script>
-
-</body>
-</html>
