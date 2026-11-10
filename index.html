@@ -1,13 +1,10 @@
+
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import {
-  Search, BookOpen, Heart, Plus, User, Phone,
-  Send, Trash2, Pencil, LogOut, X
-} from "lucide-react";
 
-const db = createClient(
+const supabase = createClient(
   "https://lszzpfiptmgsjrrrkdwj.supabase.co",
   "sb_publishable_G72FGzaa4mFQe5PS77dZaQ_cZUlF3O5"
 );
@@ -19,43 +16,51 @@ type Book = {
   price: number;
   cat: string;
   cond: string;
-  phone: string;
-  telegram: string;
-  description: string;
-  city: string;
-  district: string;
-  image_url: string;
-  user_id: string;
-  is_sold: boolean;
+  image_url?: string;
+  description?: string;
+  city?: string;
+  district?: string;
+  phone?: string;
+  telegram?: string;
+  user_id?: string;
+  is_sold?: boolean;
 };
 
 export default function Home() {
   const [books, setBooks] = useState<Book[]>([]);
-  const [user, setUser] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Barchasi");
-  const [modal, setModal] = useState("");
+  const [page, setPage] = useState("home");
+  const [user, setUser] = useState<any>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
 
-  const [name, setName] = useState("");
-  const [surname, setSurname] = useState("");
-  const [password, setPassword] = useState("");
-  const [username, setUsername] = useState("");
+  const [form, setForm] = useState({
+    title: "",
+    author: "",
+    price: "",
+    cat: "Badiiy adabiyot",
+    cond: "Yaxshi",
+    description: "",
+    city: "",
+    district: "",
+    phone: "",
+    telegram: ""
+  });
 
-  const [title, setTitle] = useState("");
-  const [author, setAuthor] = useState("");
-  const [price, setPrice] = useState("");
-  const [cat, setCat] = useState("Badiiy adabiyot");
-  const [cond, setCond] = useState("Yaxshi");
-  const [phone, setPhone] = useState("");
-  const [telegram, setTelegram] = useState("");
-  const [description, setDescription] = useState("");
-  const [city, setCity] = useState("");
-  const [district, setDistrict] = useState("");
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [editing, setEditing] = useState<string | null>(null);
+  const [image, setImage] = useState<File | null>(null);
+
+  const [register, setRegister] = useState({
+    firstName: "",
+    lastName: "",
+    password: ""
+  });
+
+  const [login, setLogin] = useState({
+    username: "",
+    password: ""
+  });
 
   const categories = [
     "Barchasi",
@@ -63,523 +68,667 @@ export default function Home() {
     "Tarix",
     "Biznes",
     "Psixologiya",
-    "Diniy kitoblar",
+    "Ilmiy",
     "Bolalar kitoblari",
-    "Darsliklar",
-    "Boshqa"
+    "Darsliklar"
   ];
 
-  useEffect(() => {
-    db.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user || null);
-    });
-
-    const { data: auth } = db.auth.onAuthStateChange(
-      (_event, session) => setUser(session?.user || null)
-    );
-
-    loadBooks();
-
-    return () => auth.subscription.unsubscribe();
-  }, []);
-
   async function loadBooks() {
-    const { data, error } = await db
+    setLoading(true);
+    const { data, error } = await supabase
       .from("books")
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) {
-      setMessage(error.message);
-      return;
-    }
-
-    setBooks((data || []) as Book[]);
+    if (!error) setBooks(data || []);
+    setLoading(false);
   }
 
-  async function register() {
-    if (!name || !surname || password.length < 6) {
-      setMessage("Ism, familiya va kamida 6 belgili parol kiriting.");
+  useEffect(() => {
+    loadBooks();
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => setUser(session?.user || null)
+    );
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const filteredBooks = useMemo(() => {
+    return books.filter((book) => {
+      const text = `${book.title} ${book.author}`.toLowerCase();
+      return (
+        text.includes(search.toLowerCase()) &&
+        (category === "Barchasi" || book.cat === category)
+      );
+    });
+  }, [books, search, category]);
+
+  async function signUp() {
+    if (!register.firstName || !register.lastName || !register.password) {
+      setMessage("Barcha maydonlarni to‘ldiring");
       return;
     }
 
-    setBusy(true);
+    const username =
+      (register.firstName + register.lastName)
+        .toLowerCase()
+        .replace(/\s/g, "") +
+      Math.floor(1000 + Math.random() * 9000);
 
-    const login =
-      (name + surname).toLowerCase().replace(/[^a-z0-9]/g, "") +
-      Math.random().toString(36).slice(2, 7);
-
-    const email = login + "@booksavdo.com";
-
-    const { data, error } = await db.auth.signUp({
-      email,
-      password,
+    const { data, error } = await supabase.auth.signUp({
+      email: username + "@booksavdo.com",
+      password: register.password,
       options: {
         data: {
-          first_name: name,
-          last_name: surname,
-          username: login
+          first_name: register.firstName,
+          last_name: register.lastName,
+          username
         }
       }
     });
 
-    setBusy(false);
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    if (data.user && data.session) {
+      setMessage("Ro‘yxatdan o‘tdingiz! Login: " + username);
+      setPage("home");
+    } else {
+      setMessage("Hisob yaratildi. Email tasdiqlash sozlamasini tekshiring.");
+    }
+  }
+
+  async function signIn() {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: login.username.includes("@")
+        ? login.username
+        : login.username + "@booksavdo.com",
+      password: login.password
+    });
+
+    if (error) {
+      setMessage("Login yoki parol noto‘g‘ri: " + error.message);
+      return;
+    }
+
+    setUser(data.user);
+    setPage("home");
+  }
+
+  async function logout() {
+    await supabase.auth.signOut();
+    setUser(null);
+    setPage("home");
+  }
+
+  async function addBook() {
+    if (!user) {
+      setMessage("Avval hisobingizga kiring");
+      return;
+    }
+
+    if (
+      !form.title ||
+      !form.author ||
+      !form.price ||
+      !form.phone ||
+      !form.city
+    ) {
+      setMessage("Kitob nomi, muallif, narx, shahar va telefon majburiy");
+      return;
+    }
+
+    let imageUrl = "";
+
+    if (image) {
+      const fileName = `${user.id}/${Date.now()}-${image.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("book-images")
+        .upload(fileName, image);
+
+      if (uploadError) {
+        setMessage("Rasm yuklanmadi: " + uploadError.message);
+        return;
+      }
+
+      const { data } = supabase.storage
+        .from("book-images")
+        .getPublicUrl(fileName);
+
+      imageUrl = data.publicUrl;
+    }
+
+    const { error } = await supabase.from("books").insert({
+      title: form.title,
+      author: form.author,
+      price: Number(form.price),
+      cat: form.cat,
+      cond: form.cond,
+      description: form.description,
+      city: form.city,
+      district: form.district,
+      phone: form.phone,
+      telegram: form.telegram,
+      contact: form.phone,
+      image_url: imageUrl,
+      user_id: user.id,
+      seller_id: user.id
+    });
+
+    if (error) {
+      setMessage("Xatolik: " + error.message);
+      return;
+    }
+
+    setMessage("Kitob muvaffaqiyatli joylandi!");
+    setForm({
+      title: "",
+      author: "",
+      price: "",
+      cat: "Badiiy adabiyot",
+      cond: "Yaxshi",
+      description: "",
+      city: "",
+      district: "",
+      phone: "",
+      telegram: ""
+    });
+    setImage(null);
+    await loadBooks();
+    setPage("home");
+  }
+
+  async function deleteBook(id: string) {
+    const { error } = await supabase
+      .from("books")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user.id);
 
     if (error) {
       setMessage(error.message);
       return;
     }
 
-    if (!data.session) {
-      setMessage("Supabase Email Confirm sozlamasini o'chirish kerak.");
-      return;
-    }
-
-    setUser(data.user);
-    setMessage("Hisob yaratildi. Loginingiz: " + login);
-    setModal("");
+    setMessage("Kitob o‘chirildi");
+    loadBooks();
   }
 
-  async function login() {
-    if (!username || !password) {
-      setMessage("Login va parolni kiriting.");
-      return;
-    }
-
-    setBusy(true);
-
-    const { data, error } = await db.auth.signInWithPassword({
-      email: username.toLowerCase() + "@booksavdo.com",
-      password
-    });
-
-    setBusy(false);
+  async function markSold(id: string) {
+    const { error } = await supabase
+      .from("books")
+      .update({ is_sold: true })
+      .eq("id", id)
+      .eq("user_id", user.id);
 
     if (error) {
-      setMessage("Login yoki parol xato.");
+      setMessage(error.message);
       return;
     }
 
-    setUser(data.user);
-    setModal("");
+    loadBooks();
   }
 
-  async function logout() {
-    await db.auth.signOut();
-    setUser(null);
-  }
-
-  async function saveBook(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (!user) {
-      setMessage("Avval hisobga kiring.");
-      return;
-    }
-
-    if (!title || !author || !price || !phone || !city) {
-      setMessage("Barcha majburiy joylarni to'ldiring.");
-      return;
-    }
-
-    setBusy(true);
-
-    let image_url = "";
-
-    if (photo) {
-      const ext = photo.name.split(".").pop() || "jpg";
-      const path = `${user.id}/${Date.now()}.${ext}`;
-
-      const { error: uploadError } = await db.storage
-        .from("book-images")
-        .upload(path, photo);
-
-      if (uploadError) {
-        setBusy(false);
-        setMessage(uploadError.message);
-        return;
-      }
-
-      image_url = db.storage
-        .from("book-images")
-        .getPublicUrl(path).data.publicUrl;
-    }
-
-    const payload = {
-      title,
-      author,
-      price: Number(price),
-      cat,
-      cond,
-      phone,
-      telegram,
-      description,
-      city,
-      district,
-      image_url: image_url || null,
-      user_id: user.id,
-      seller_id: user.id,
-      contact: phone
-    };
-
-    const result = editing
-      ? await db.from("books").update(payload)
-          .eq("id", editing).eq("user_id", user.id)
-      : await db.from("books").insert(payload);
-
-    setBusy(false);
-
-    if (result.error) {
-      setMessage(result.error.message);
-      return;
-    }
-
-    setModal("");
-    setEditing(null);
-    setPhoto(null);
-    setTitle("");
-    setAuthor("");
-    setPrice("");
-    setPhone("");
-    setTelegram("");
-    setDescription("");
-    setCity("");
-    setDistrict("");
-    await loadBooks();
-    setMessage("Kitob muvaffaqiyatli joylandi!");
-  }
-
-  async function removeBook(id: string) {
-    if (!confirm("Kitobni o'chirasizmi?")) return;
-
-    const { error } = await db.from("books")
-      .delete().eq("id", id).eq("user_id", user.id);
-
-    if (error) setMessage(error.message);
-    else loadBooks();
-  }
-
-  async function soldBook(book: Book) {
-    const { error } = await db.from("books")
-      .update({ is_sold: !book.is_sold })
-      .eq("id", book.id).eq("user_id", user.id);
-
-    if (error) setMessage(error.message);
-    else loadBooks();
-  }
-
-  function editBook(book: Book) {
-    setEditing(book.id);
-    setTitle(book.title);
-    setAuthor(book.author);
-    setPrice(String(book.price));
-    setCat(book.cat);
-    setCond(book.cond);
-    setPhone(book.phone || "");
-    setTelegram(book.telegram || "");
-    setDescription(book.description || "");
-    setCity(book.city || "");
-    setDistrict(book.district || "");
-    setModal("add");
-  }
-
-  const filtered = books.filter(book => {
-    const q = search.toLowerCase();
-
-    return (
-      (book.title || "").toLowerCase().includes(q) ||
-      (book.author || "").toLowerCase().includes(q)
-    ) && (
-      category === "Barchasi" || book.cat === category
-    );
-  });
+  const money = (price: number) =>
+    new Intl.NumberFormat("uz-UZ").format(price) + " so‘m";
 
   return (
-    <main style={{
-      minHeight: "100vh",
-      background: "#f4f6fa",
-      color: "#172033",
-      fontFamily: "Arial"
-    }}>
+    <main className="min-h-screen bg-[#f4f6fa] text-[#15233b]">
+      <header className="sticky top-0 z-50 bg-[#101d36] text-white shadow-lg">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4">
+          <button onClick={() => setPage("home")} className="text-left">
+            <div className="text-2xl font-black tracking-tight">
+              <span className="text-orange-400">Book</span>Savdo
+            </div>
+            <div className="text-xs text-slate-300">
+              Kitobga ikkinchi hayot!
+            </div>
+          </button>
 
-      <header style={{
-        background: "#142039",
-        color: "white",
-        padding: "18px 5%",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        flexWrap: "wrap",
-        gap: 12
-      }}>
-        <h2 style={{ color: "#ff9d27", margin: 0 }}>
-          Book<span style={{ color: "white" }}>Savdo</span>
-        </h2>
+          <div className="hidden flex-1 md:block md:max-w-xl">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Kitob yoki muallifni qidiring..."
+              className="w-full rounded-xl bg-white px-4 py-3 text-black outline-none"
+            />
+          </div>
 
-        <div style={{ display: "flex", gap: 10 }}>
-          {user ? (
-            <>
-              <button onClick={() => setModal("add")}>+ Kitob joylash</button>
-              <button onClick={logout}>Chiqish</button>
-            </>
-          ) : (
-            <>
-              <button onClick={() => setModal("login")}>Kirish</button>
-              <button onClick={() => setModal("register")}>
-                Ro'yxatdan o'tish
-              </button>
-            </>
-          )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage("favorites")}
+              className="rounded-xl bg-white/10 px-3 py-2"
+            >
+              ♡
+            </button>
+            <button
+              onClick={() => setPage(user ? "add" : "login")}
+              className="rounded-xl bg-orange-500 px-3 py-2 font-bold"
+            >
+              + Sotish
+            </button>
+            <button
+              onClick={() => setPage(user ? "account" : "login")}
+              className="rounded-xl bg-white/10 px-3 py-2"
+            >
+              {user ? "Kabinet" : "Kirish"}
+            </button>
+          </div>
+        </div>
+
+        <div className="px-4 pb-3 md:hidden">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Kitob qidirish..."
+            className="w-full rounded-xl bg-white px-4 py-3 text-black"
+          />
         </div>
       </header>
 
-      <section style={{
-        background: "#1d3455",
-        color: "white",
-        padding: "45px 7%"
-      }}>
-        <h1>Kitobga ikkinchi hayot!</h1>
-        <p>Sevimli kitoblaringizni arzon narxlarda toping.</p>
-
-        <input
-          placeholder="Kitob nomini yoki muallifini qidiring..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{
-            width: "100%",
-            maxWidth: 600,
-            padding: 15,
-            borderRadius: 10,
-            border: 0
-          }}
-        />
-      </section>
-
-      <section style={{ padding: "25px 5%" }}>
-        <h2>Kitob bo'limlari</h2>
-
-        <div style={{
-          display: "flex",
-          gap: 9,
-          overflowX: "auto",
-          paddingBottom: 15
-        }}>
-          {categories.map(c => (
+      <section className="mx-auto max-w-7xl px-4 py-7">
+        <div className="rounded-3xl bg-gradient-to-r from-[#172b50] to-[#263f70] p-7 text-white md:p-12">
+          <div className="max-w-2xl">
+            <span className="rounded-full bg-orange-500 px-3 py-1 text-xs font-bold">
+              KITOBLAR MARKETPLACE
+            </span>
+            <h1 className="mt-5 text-3xl font-black md:text-5xl">
+              O‘qilgan kitoblar yangi egasini kutmoqda!
+            </h1>
+            <p className="mt-4 text-slate-200">
+              Sevimli kitoblaringizni arzon narxda toping yoki o‘qib
+              bo‘lgan kitoblaringizni soting.
+            </p>
             <button
-              key={c}
-              onClick={() => setCategory(c)}
-              style={{
-                padding: "10px 16px",
-                borderRadius: 25,
-                border: 0,
-                background: category === c ? "#172c49" : "white",
-                color: category === c ? "white" : "#172033"
-              }}
+              onClick={() => setPage("add")}
+              className="mt-6 rounded-xl bg-orange-500 px-6 py-3 font-bold"
             >
-              {c}
+              Kitob sotishni boshlash →
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-7 flex gap-2 overflow-x-auto pb-2">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setCategory(cat)}
+              className={`shrink-0 rounded-full px-5 py-3 text-sm font-bold ${
+                category === cat
+                  ? "bg-orange-500 text-white"
+                  : "bg-white text-slate-700"
+              }`}
+            >
+              {cat}
             </button>
           ))}
         </div>
 
-        <h2>Barcha kitoblar</h2>
+        {message && (
+          <div className="my-5 rounded-xl bg-orange-100 p-4 text-orange-900">
+            {message}
+            <button
+              onClick={() => setMessage("")}
+              className="float-right font-bold"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill,minmax(190px,1fr))",
-          gap: 16
-        }}>
-          {filtered.map(book => (
-            <article key={book.id} style={{
-              background: "white",
-              borderRadius: 15,
-              overflow: "hidden",
-              paddingBottom: 15
-            }}>
-              {book.image_url ? (
-                <img
-                  src={book.image_url}
-                  alt={book.title}
-                  style={{
-                    width: "100%",
-                    height: 210,
-                    objectFit: "cover"
-                  }}
-                />
-              ) : (
-                <div style={{
-                  height: 210,
-                  display: "grid",
-                  placeItems: "center",
-                  background: "#e9edf3"
-                }}>
-                  <BookOpen size={50} />
-                </div>
-              )}
+        {page === "home" && (
+          <>
+            <div className="mb-5 mt-7 flex items-center justify-between">
+              <h2 className="text-2xl font-black">Yangi kitoblar</h2>
+              <span className="text-sm text-slate-500">
+                {filteredBooks.length} ta kitob
+              </span>
+            </div>
 
-              <div style={{ padding: 12 }}>
-                <h3>{book.title}</h3>
-                <p>{book.author}</p>
-                <h3 style={{ color: "#ee8d20" }}>
-                  {Number(book.price).toLocaleString()} so'm
-                </h3>
-                <p>{book.city} {book.district}</p>
-
-                {book.is_sold && <b>Sotilgan</b>}
-
-                {user?.id === book.user_id ? (
-                  <>
-                    <button onClick={() => editBook(book)}>Tahrirlash</button>
-                    <button onClick={() => soldBook(book)}>Sotildi</button>
-                    <button onClick={() => removeBook(book.id)}>
-                      O'chirish
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <a href={`tel:${book.phone}`}>📞 Qo'ng'iroq</a>
-                    {book.telegram && (
-                      <a
-                        href={`https://t.me/${book.telegram.replace("@", "")}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {" "}Telegram
-                      </a>
-                    )}
-                  </>
-                )}
+            {loading ? (
+              <p>Yuklanmoqda...</p>
+            ) : filteredBooks.length === 0 ? (
+              <div className="rounded-2xl bg-white p-12 text-center">
+                <div className="text-5xl">📚</div>
+                <h3 className="mt-4 text-xl font-bold">Hozircha kitob yo‘q</h3>
+                <p className="mt-2 text-slate-500">
+                  Birinchi bo‘lib kitob joylang!
+                </p>
               </div>
-            </article>
-          ))}
-        </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5">
+                {filteredBooks.map((book) => (
+                  <article
+                    key={book.id}
+                    className="overflow-hidden rounded-2xl bg-white shadow-sm"
+                  >
+                    <div className="relative flex h-48 items-center justify-center bg-slate-100">
+                      {book.image_url ? (
+                        <img
+                          src={book.image_url}
+                          alt={book.title}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-6xl">📖</span>
+                      )}
+                      <button
+                        onClick={() =>
+                          setFavorites((old) =>
+                            old.includes(book.id)
+                              ? old.filter((x) => x !== book.id)
+                              : [...old, book.id]
+                          )
+                        }
+                        className="absolute right-3 top-3 rounded-full bg-white px-3 py-2"
+                      >
+                        {favorites.includes(book.id) ? "❤️" : "♡"}
+                      </button>
+                      {book.is_sold && (
+                        <span className="absolute bottom-2 left-2 rounded-lg bg-red-600 px-3 py-1 text-white">
+                          Sotilgan
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="p-3">
+                      <div className="text-xs text-orange-600">
+                        {book.cat}
+                      </div>
+                      <h3 className="mt-1 line-clamp-2 font-bold">
+                        {book.title}
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {book.author}
+                      </p>
+                      <div className="mt-3 font-black text-[#172b50]">
+                        {money(book.price)}
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {book.city} {book.district}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Holati: {book.cond}
+                      </p>
+
+                      {book.description && (
+                        <p className="mt-2 line-clamp-3 text-xs text-slate-600">
+                          {book.description}
+                        </p>
+                      )}
+
+                      {book.phone && (
+                        <a
+                          href={`tel:${book.phone}`}
+                          className="mt-3 block rounded-lg bg-[#172b50] py-2 text-center text-sm font-bold text-white"
+                        >
+                          ☎ Qo‘ng‘iroq qilish
+                        </a>
+                      )}
+
+                      {book.telegram && (
+                        <a
+                          href={
+                            book.telegram.startsWith("http")
+                              ? book.telegram
+                              : `https://t.me/${book.telegram.replace("@", "")}`
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 block rounded-lg bg-sky-500 py-2 text-center text-sm font-bold text-white"
+                        >
+                          Telegram
+                        </a>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {page === "add" && (
+          <section className="mx-auto mt-8 max-w-2xl rounded-3xl bg-white p-6 shadow-sm">
+            <h2 className="mb-5 text-2xl font-black">Kitob joylash</h2>
+
+            <div className="grid gap-4">
+              <input
+                placeholder="Kitob nomi"
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                className="rounded-xl border p-3"
+              />
+              <input
+                placeholder="Muallif"
+                value={form.author}
+                onChange={(e) => setForm({ ...form, author: e.target.value })}
+                className="rounded-xl border p-3"
+              />
+              <input
+                type="number"
+                placeholder="Narxi (so‘m)"
+                value={form.price}
+                onChange={(e) => setForm({ ...form, price: e.target.value })}
+                className="rounded-xl border p-3"
+              />
+              <select
+                value={form.cat}
+                onChange={(e) => setForm({ ...form, cat: e.target.value })}
+                className="rounded-xl border p-3"
+              >
+                {categories.slice(1).map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
+              <select
+                value={form.cond}
+                onChange={(e) => setForm({ ...form, cond: e.target.value })}
+                className="rounded-xl border p-3"
+              >
+                <option>Yangi</option>
+                <option>Yaxshi</option>
+                <option>O‘rtacha</option>
+                <option>Eski</option>
+              </select>
+              <textarea
+                placeholder="Kitob haqida qisqacha ma’lumot"
+                value={form.description}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+                className="rounded-xl border p-3"
+              />
+              <input
+                placeholder="Shahar"
+                value={form.city}
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                className="rounded-xl border p-3"
+              />
+              <input
+                placeholder="Tuman"
+                value={form.district}
+                onChange={(e) =>
+                  setForm({ ...form, district: e.target.value })
+                }
+                className="rounded-xl border p-3"
+              />
+              <input
+                type="tel"
+                placeholder="Telefon raqam (majburiy)"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                className="rounded-xl border p-3"
+                required
+              />
+              <input
+                placeholder="Telegram username (ixtiyoriy)"
+                value={form.telegram}
+                onChange={(e) =>
+                  setForm({ ...form, telegram: e.target.value })
+                }
+                className="rounded-xl border p-3"
+              />
+              <label className="rounded-xl border border-dashed p-5 text-center">
+                📷 Kitob rasmini tanlang
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setImage(e.target.files?.[0] || null)}
+                  className="mt-3 block w-full"
+                />
+              </label>
+              <button
+                onClick={addBook}
+                className="rounded-xl bg-orange-500 p-4 font-black text-white"
+              >
+                Kitobni joylash
+              </button>
+            </div>
+          </section>
+        )}
+
+        {page === "login" && (
+          <section className="mx-auto mt-8 max-w-md rounded-3xl bg-white p-6 shadow">
+            <h2 className="text-2xl font-black">Hisobga kirish</h2>
+            <input
+              placeholder="Login"
+              value={login.username}
+              onChange={(e) =>
+                setLogin({ ...login, username: e.target.value })
+              }
+              className="mt-5 w-full rounded-xl border p-3"
+            />
+            <input
+              type="password"
+              placeholder="Parol"
+              value={login.password}
+              onChange={(e) =>
+                setLogin({ ...login, password: e.target.value })
+              }
+              className="mt-3 w-full rounded-xl border p-3"
+            />
+            <button
+              onClick={signIn}
+              className="mt-4 w-full rounded-xl bg-[#172b50] p-3 font-bold text-white"
+            >
+              Kirish
+            </button>
+            <button
+              onClick={() => setPage("register")}
+              className="mt-3 w-full rounded-xl bg-orange-500 p-3 font-bold text-white"
+            >
+              Ro‘yxatdan o‘tish
+            </button>
+          </section>
+        )}
+
+        {page === "register" && (
+          <section className="mx-auto mt-8 max-w-md rounded-3xl bg-white p-6 shadow">
+            <h2 className="text-2xl font-black">Ro‘yxatdan o‘tish</h2>
+            <input
+              placeholder="Ism"
+              value={register.firstName}
+              onChange={(e) =>
+                setRegister({ ...register, firstName: e.target.value })
+              }
+              className="mt-5 w-full rounded-xl border p-3"
+            />
+            <input
+              placeholder="Familiya"
+              value={register.lastName}
+              onChange={(e) =>
+                setRegister({ ...register, lastName: e.target.value })
+              }
+              className="mt-3 w-full rounded-xl border p-3"
+            />
+            <input
+              type="password"
+              placeholder="Parol"
+              value={register.password}
+              onChange={(e) =>
+                setRegister({ ...register, password: e.target.value })
+              }
+              className="mt-3 w-full rounded-xl border p-3"
+            />
+            <button
+              onClick={signUp}
+              className="mt-4 w-full rounded-xl bg-orange-500 p-3 font-bold text-white"
+            >
+              Hisob yaratish
+            </button>
+          </section>
+        )}
+
+        {page === "account" && (
+          <section className="mx-auto mt-8 max-w-2xl rounded-3xl bg-white p-6">
+            <h2 className="text-2xl font-black">Shaxsiy kabinet</h2>
+            <p className="mt-2 text-slate-500">{user?.email}</p>
+            <h3 className="mb-4 mt-6 text-xl font-bold">Mening kitoblarim</h3>
+            {books
+              .filter((b) => b.user_id === user?.id)
+              .map((book) => (
+                <div
+                  key={book.id}
+                  className="mb-3 flex items-center justify-between gap-3 rounded-xl border p-3"
+                >
+                  <div>
+                    <b>{book.title}</b>
+                    <p className="text-sm text-slate-500">
+                      {money(book.price)}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => markSold(book.id)}
+                      className="rounded-lg bg-green-100 px-3 py-2 text-green-800"
+                    >
+                      Sotildi
+                    </button>
+                    <button
+                      onClick={() => deleteBook(book.id)}
+                      className="rounded-lg bg-red-100 px-3 py-2 text-red-700"
+                    >
+                      O‘chirish
+                    </button>
+                  </div>
+                </div>
+              ))}
+            <button
+              onClick={logout}
+              className="mt-5 rounded-xl bg-red-600 px-5 py-3 font-bold text-white"
+            >
+              Hisobdan chiqish
+            </button>
+          </section>
+        )}
+
+        {page === "favorites" && (
+          <section className="mt-8">
+            <h2 className="mb-5 text-2xl font-black">Sevimli kitoblar</h2>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {books
+                .filter((b) => favorites.includes(b.id))
+                .map((book) => (
+                  <div key={book.id} className="rounded-xl bg-white p-4">
+                    <b>{book.title}</b>
+                    <p>{money(book.price)}</p>
+                  </div>
+                ))}
+            </div>
+          </section>
+        )}
       </section>
 
-      {modal && (
-        <div style={{
-          position: "fixed",
-          inset: 0,
-          background: "#0009",
-          display: "grid",
-          placeItems: "center",
-          padding: 15,
-          zIndex: 20
-        }}>
-          <div style={{
-            background: "white",
-            padding: 22,
-            borderRadius: 15,
-            width: "100%",
-            maxWidth: 500,
-            maxHeight: "90vh",
-            overflowY: "auto"
-          }}>
-            <button onClick={() => setModal("")}>✕</button>
-
-            <h2>
-              {modal === "register" ? "Ro'yxatdan o'tish"
-                : modal === "login" ? "Kirish" : "Kitob joylash"}
-            </h2>
-
-            {modal === "register" && (
-              <>
-                <input placeholder="Ism" value={name}
-                  onChange={e => setName(e.target.value)} />
-                <input placeholder="Familiya" value={surname}
-                  onChange={e => setSurname(e.target.value)} />
-                <input placeholder="Parol" type="password"
-                  value={password} onChange={e => setPassword(e.target.value)} />
-                <button disabled={busy} onClick={register}>
-                  {busy ? "Kutib turing..." : "Ro'yxatdan o'tish"}
-                </button>
-              </>
-            )}
-
-            {modal === "login" && (
-              <>
-                <input placeholder="Login" value={username}
-                  onChange={e => setUsername(e.target.value)} />
-                <input placeholder="Parol" type="password"
-                  value={password} onChange={e => setPassword(e.target.value)} />
-                <button disabled={busy} onClick={login}>Kirish</button>
-              </>
-            )}
-
-            {modal === "add" && (
-              <form onSubmit={saveBook}>
-                <p>Kitob rasmi</p>
-                <input type="file" accept="image/*"
-                  onChange={e => setPhoto(e.target.files?.[0] || null)} />
-
-                <input required placeholder="Kitob nomi"
-                  value={title} onChange={e => setTitle(e.target.value)} />
-
-                <input required placeholder="Muallif"
-                  value={author} onChange={e => setAuthor(e.target.value)} />
-
-                <input required type="number" placeholder="Narxi"
-                  value={price} onChange={e => setPrice(e.target.value)} />
-
-                <select value={cat} onChange={e => setCat(e.target.value)}>
-                  {categories.filter(x => x !== "Barchasi").map(x =>
-                    <option key={x}>{x}</option>
-                  )}
-                </select>
-
-                <select value={cond} onChange={e => setCond(e.target.value)}>
-                  <option>A'lo</option>
-                  <option>Yaxshi</option>
-                  <option>O'rtacha</option>
-                </select>
-
-                <textarea placeholder="Kitob haqida"
-                  value={description} onChange={e => setDescription(e.target.value)} />
-
-                <input required placeholder="Shahar"
-                  value={city} onChange={e => setCity(e.target.value)} />
-
-                <input placeholder="Tuman"
-                  value={district} onChange={e => setDistrict(e.target.value)} />
-
-                <input required type="tel" placeholder="+998 telefon raqami"
-                  value={phone} onChange={e => setPhone(e.target.value)} />
-
-                <input placeholder="@telegram (ixtiyoriy)"
-                  value={telegram} onChange={e => setTelegram(e.target.value)} />
-
-                <button disabled={busy} type="submit">
-                  {busy ? "Saqlanmoqda..." : "Kitobni joylash"}
-                </button>
-              </form>
-            )}
-          </div>
+      <footer className="mt-16 bg-[#101d36] px-4 py-8 text-center text-white">
+        <div className="text-2xl font-black">
+          <span className="text-orange-400">Book</span>Savdo
         </div>
-      )}
-
-      {message && (
-        <div style={{
-          position: "fixed",
-          bottom: 20,
-          left: 15,
-          right: 15,
-          background: "#172c49",
-          color: "white",
-          padding: 15,
-          borderRadius: 10,
-          zIndex: 40
-        }}>
-          {message}
-          <button onClick={() => setMessage("")}>✕</button>
-        </div>
-      )}
-
-      <footer style={{
-        background: "#142039",
-        color: "white",
-        textAlign: "center",
-        padding: 30
-      }}>
-        <h2 style={{ color: "#ff9d27" }}>BookSavdo</h2>
-        Kitobga ikkinchi hayot!
+        <p className="mt-2 text-sm text-slate-300">
+          Kitobga ikkinchi hayot!
+        </p>
       </footer>
     </main>
   );
