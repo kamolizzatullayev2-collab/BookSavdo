@@ -1,149 +1,151 @@
+
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>BookSavdo</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BookSavdo — Kitobga ikkinchi hayot!</title>
 <style>
-:root{color-scheme:light;--bg:#faf6ef;--card:#ffffff;--ink:#2b2118;--mute:#7a6a5a;--acc:#1f5c4a;--acc2:#ffffff;--line:#e6dccd}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,sans-serif;line-height:1.4}
-.w{max-width:760px;margin:0 auto;padding:12px 14px 30px}
-.bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.logo{font-family:Georgia,serif;font-weight:700;font-size:20px}.logo b{color:var(--acc)}
-input,select,button{font:inherit}
-input,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:16px}
-button{border:0;border-radius:10px;padding:10px 14px;background:var(--acc);color:var(--acc2);font-weight:600;cursor:pointer}
-button.g{background:transparent;color:var(--acc);border:1px solid var(--acc)}
-.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0}
-.chip{flex:none;padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:14px}
-.chip.on{background:var(--acc);color:var(--acc2)}
-.flt{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-.cnt{color:var(--mute);font-size:13px;margin-bottom:8px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(min-width:560px){.grid{grid-template-columns:repeat(3,1fr)}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
-.cv img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.cv{height:130px;display:flex;align-items:center;justify-content:center;font-size:42px;position:relative}
-.tag{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:3px 8px;border-radius:99px}
-.b{padding:10px;display:flex;flex-direction:column;gap:3px;flex:1}
-.t{font-weight:700;font-family:Georgia,serif}.a,.m{color:var(--mute);font-size:13px}
-.p{color:var(--acc);font-weight:700;margin-top:auto;padding-top:4px}
-.card button{margin-top:6px;padding:8px;font-size:14px}
-.f{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:20;padding:12px;overflow:auto}.f.o{display:block}
-.fb{max-width:460px;margin:12px auto;background:var(--bg);border-radius:16px;padding:16px}
-.fb input,.fb select{margin-bottom:8px}.fb h2{margin:0 0 10px}.row{display:flex;gap:8px}
-.e{text-align:center;color:var(--mute);padding:34px 0;grid-column:1/-1}
+body{margin:0;font-family:Arial,sans-serif;background:#fffaf5;color:#292929}
+header{background:#f47721;color:white;padding:22px 16px;text-align:center}
+header h1{margin:0;font-size:30px}
+header p{margin:7px 0 0}
+.container{max-width:1000px;margin:auto;padding:16px}
+.search{width:100%;padding:14px;border:1px solid #ddd;border-radius:12px;font-size:16px}
+h2{color:#e96c17}
+.categories{display:flex;gap:8px;overflow:auto;margin:15px 0}
+.categories button,.main-btn{border:0;background:#f47721;color:white;padding:11px 16px;border-radius:10px;white-space:nowrap}
+.categories button.active{background:#292929}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px}
+.card{background:white;border:1px solid #eee;border-radius:14px;padding:12px;box-shadow:0 2px 8px #0000000b}
+.cover{height:130px;background:#fff0e3;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:55px}
+.card h3{font-size:16px;margin:10px 0 5px}
+.muted{color:#777;font-size:13px}
+.price{color:#e96c17;font-size:18px;font-weight:bold;margin:10px 0}
+.card a{display:block;text-align:center;background:#f47721;color:white;text-decoration:none;padding:10px;border-radius:9px;margin-top:8px}
+.card button{border:0;background:none;color:#e96c17;font-size:20px}
+form{background:white;padding:16px;border-radius:14px;border:1px solid #eee;margin:25px 0}
+form input,form select{width:100%;padding:12px;margin:7px 0;border:1px solid #ddd;border-radius:9px;font-size:15px}
+form button{width:100%;padding:13px;background:#f47721;color:white;border:0;border-radius:10px;font-size:16px}
+footer{text-align:center;padding:25px;color:#777}
 </style>
 </head>
 <body>
-<div class="w">
-  <div class="bar"><div class="logo">📚 Book<b>Savdo</b></div><button id="add">+ Sotish</button></div>
-  <input id="q" placeholder="Kitob yoki muallif qidiring…">
-  <div class="chips" id="chips"></div>
-  <div class="flt">
-    <select id="city"><option value="">Barcha shaharlar</option></select>
-    <select id="sort"><option value="new">Yangilari</option><option value="cheap">Arzon narx</option><option value="exp">Qimmat narx</option></select>
-  </div>
-  <div class="cnt" id="cnt"></div>
-  <div class="grid" id="list"><div class="e">Yuklanmoqda…</div></div>
-</div>
-<div class="f" id="form"><div class="fb">
-  <h2>Kitobni sotish</h2>
-  <input id="ti" placeholder="Kitob nomi">
-  <input id="au" placeholder="Muallif">
-  <input id="pr" type="number" inputmode="numeric" placeholder="Narxi (so’m)">
-  <select id="ca"></select>
-  <select id="co"><option>Yangidek</option><option selected>Yaxshi</option><option>O’rtacha</option><option>Eskirgan</option></select>
-  <select id="ci"></select>
-  <input id="ph" type="file" accept="image/*"><div class="m" style="color:var(--mute);font-size:12px;margin:-4px 0 8px">Kitob rasmi (ixtiyoriy)</div>
-  <input id="ct" placeholder="Telefon (Telegram username bo’lsa bo’sh qoldiring)">
-  <div class="row"><button id="save">Joylash</button><button class="g" id="cancel">Bekor qilish</button></div>
-</div></div>
-<script>
-// 1) Supabase sozlamalari: Project Settings → API dan oling
-var SUPABASE_URL = 'https://lszzpfiptmgsjrrrkdwj.supabase.co';
-var SUPABASE_ANON_KEY = 'sb_publishable_G72FGzaa4mFQe5PS77dZaQ_cZUlF3O5';
 
-var tg = window.Telegram && Telegram.WebApp;
-if (tg) { tg.ready(); tg.expand(); try{ tg.setHeaderColor('#faf6ef'); tg.setBackgroundColor('#faf6ef'); }catch(e){} }
-var tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
-var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-var CATS=[['Badiiy','📖','#e8c9a8'],['Darslik','🎓','#b8d4e3'],['Bolalar','🧸','#f2d0d6'],['Biznes','💼','#c9dcc0'],['Tarixiy','🏛️','#dcc9e6'],['Boshqa','📚','#d9d4c7']];
-var CITIES=['Toshkent','Samarqand','Buxoro','Andijon','Farg’ona','Namangan','Boshqa'];
-var books=[],cat='';
-var $=function(i){return document.getElementById(i)};
-function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML}
-function cinfo(n){return CATS.filter(function(c){return c[0]===n})[0]||CATS[5]}
-$('ca').innerHTML=CATS.map(function(c){return '<option>'+c[0]+'</option>'}).join('');
-$('ci').innerHTML=CITIES.map(function(c){return '<option>'+c+'</option>'}).join('');
-$('city').innerHTML+=CITIES.map(function(c){return '<option>'+c+'</option>'}).join('');
-function chips(){
-  var all=[['','Hammasi']].concat(CATS.map(function(c){return [c[0],c[1]+' '+c[0]]}));
-  $('chips').innerHTML=all.map(function(c){return '<button class="chip'+(cat===c[0]?' on':'')+'" data-c="'+c[0]+'">'+c[1]+'</button>'}).join('');
+<header>
+<h1>📚 BookSavdo</h1>
+<p>Kitobga ikkinchi hayot!</p>
+</header>
+
+<div class="container">
+<h2>Kitoblarni toping</h2>
+<input class="search" id="search" placeholder="Kitob yoki muallif nomini yozing...">
+
+<div class="categories">
+<button class="active" onclick="filterBooks('Barchasi',this)">Barchasi</button>
+<button onclick="filterBooks('Badiiy',this)">Badiiy</button>
+<button onclick="filterBooks('Biznes',this)">Biznes</button>
+<button onclick="filterBooks('Tarix',this)">Tarix</button>
+<button onclick="filterBooks('Darslik',this)">Darslik</button>
+</div>
+
+<div class="grid" id="books"></div>
+
+<h2>📖 Kitobingizni soting</h2>
+<form id="bookForm">
+<input id="title" placeholder="Kitob nomi" required>
+<input id="author" placeholder="Muallif" required>
+<input id="price" type="number" placeholder="Narxi (so'm)" required>
+<select id="category">
+<option>Badiiy</option>
+<option>Biznes</option>
+<option>Tarix</option>
+<option>Darslik</option>
+</select>
+<select id="condition">
+<option>Yaxshi holatda</option>
+<option>Yangi kabi</option>
+<option>O‘qilgan, lekin yaxshi</option>
+</select>
+<input id="phone" placeholder="Telefon raqamingiz (+998...)">
+<input id="telegram" placeholder="Telegram username (@username)">
+<button type="submit">Kitobni e'lon qilish</button>
+</form>
+</div>
+
+<footer>© 2026 BookSavdo. Kitobga ikkinchi hayot!</footer>
+
+<script>
+let books = JSON.parse(localStorage.getItem("booksavdo") || "[]");
+
+if(books.length === 0){
+books = [
+{title:"O‘tkan kunlar",author:"Abdulla Qodiriy",price:35000,category:"Badiiy",condition:"Yaxshi holatda"},
+{title:"Mehrobdan chayon",author:"Abdulla Qodiriy",price:30000,category:"Badiiy",condition:"O‘qilgan, lekin yaxshi"},
+{title:"Boy ota, kambag‘al ota",author:"Robert Kiyosaki",price:45000,category:"Biznes",condition:"Yaxshi holatda"}
+];
 }
+
+let currentCategory="Barchasi";
+
+function save(){
+localStorage.setItem("booksavdo",JSON.stringify(books));
+}
+
 function render(){
-  var t=$('q').value.trim().toLowerCase(),city=$('city').value,s=$('sort').value;
-  var r=books.filter(function(b){return (!t||((b.title||'')+' '+(b.author||'')).toLowerCase().indexOf(t)>-1)&&(!cat||b.cat===cat)&&(!city||b.city===city)});
-  r.sort(function(a,b){return s==='cheap'?a.price-b.price:s==='exp'?b.price-a.price:new Date(b.created_at)-new Date(a.created_at)});
-  $('cnt').textContent=r.length+' ta kitob topildi';
-  if(!r.length){$('list').innerHTML='<div class="e">Hozircha kitob yo’q. Birinchi bo’lib soting!</div>';return}
-  $('list').innerHTML=r.map(function(b){var c=cinfo(b.cat);
-    return '<div class="card"><div class="cv" style="background:'+c[2]+'">'+(b.image_url?'<img src="'+esc(b.image_url)+'" alt="">':c[1])+'<span class="tag">'+esc(b.cond)+'</span></div><div class="b"><div class="t">'+esc(b.title)+'</div><div class="a">'+esc(b.author||'—')+'</div><div class="m">📍 '+esc(b.city)+' · '+esc(b.cat)+'</div><div class="p">'+Number(b.price).toLocaleString('uz-UZ')+' so’m</div><button data-k="'+esc(b.id)+'">Bog’lanish</button></div></div>';
-  }).join('');
+let search=document.getElementById("search").value.toLowerCase();
+let list=books.filter(b=>
+(currentCategory==="Barchasi"||b.category===currentCategory)&&
+(b.title.toLowerCase().includes(search)||b.author.toLowerCase().includes(search))
+);
+
+document.getElementById("books").innerHTML=list.map((b,i)=>`
+<div class="card">
+<div class="cover">📚</div>
+<h3>${escapeHTML(b.title)}</h3>
+<div class="muted">${escapeHTML(b.author)}</div>
+<div class="muted">${escapeHTML(b.condition||"")}</div>
+<div class="price">${Number(b.price).toLocaleString("uz-UZ")} so‘m</div>
+${b.phone?`<a href="tel:${encodeURIComponent(b.phone)}">📞 Qo‘ng‘iroq qilish</a>`:""}
+${b.telegram?`<a href="https://t.me/${encodeURIComponent(b.telegram.replace("@",""))}" target="_blank">✈️ Telegram</a>`:""}
+</div>`).join("") || "<p>Kitob topilmadi.</p>";
 }
-async function load(){
-  var r=await sb.from('books').select('*').order('created_at',{ascending:false}).limit(200);
-  if(r.error){$('list').innerHTML='<div class="e">Yuklab bo’lmadi. Supabase sozlamalarini tekshiring.</div>';return}
-  books=r.data;render();
+
+function escapeHTML(value){
+return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
-$('q').oninput=render;$('city').onchange=render;$('sort').onchange=render;
-$('chips').onclick=function(e){var c=e.target.getAttribute('data-c');if(c===null)return;cat=c;chips();render()};
-$('add').onclick=function(){$('form').classList.add('o')};
-$('cancel').onclick=function(){$('form').classList.remove('o')};
-function shrink(file){
-  return new Promise(function(res,rej){
-    var img=new Image(),u=URL.createObjectURL(file);
-    img.onload=function(){
-      var m=900,k=Math.min(1,m/Math.max(img.width,img.height));
-      var c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
-      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-      c.toBlob(function(b){URL.revokeObjectURL(u);b?res(b):rej()},'image/jpeg',0.8);
-    };
-    img.onerror=rej;img.src=u;
-  });
+
+function filterBooks(category,button){
+currentCategory=category;
+document.querySelectorAll(".categories button").forEach(b=>b.classList.remove("active"));
+button.classList.add("active");
+render();
 }
-$('save').onclick=async function(){
-  var btn=$('save');
-  var contact=$('ct').value.trim()||(tgUser&&tgUser.username?'@'+tgUser.username:'');
-  var b={title:$('ti').value.trim(),author:$('au').value.trim(),price:Number($('pr').value),cat:$('ca').value,cond:$('co').value,city:$('ci').value,contact:contact,seller_id:String(tgUser?tgUser.id:'web')};
-  if(!b.title||!b.price||!b.contact){alert('Nom, narx va aloqani kiriting');return}
-  btn.disabled=true;btn.textContent='Joylanmoqda…';
-  try{
-    var f=$('ph').files[0];
-    if(f){
-      var blob=await shrink(f);
-      var path=Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.jpg';
-      var up=await sb.storage.from('covers').upload(path,blob,{contentType:'image/jpeg'});
-      if(up.error)throw up.error;
-      b.image_url=sb.storage.from('covers').getPublicUrl(path).data.publicUrl;
-    }
-    var r=await sb.from('books').insert(b);
-    if(r.error)throw r.error;
-    ['ti','au','pr','ct','ph'].forEach(function(i){$(i).value=''});$('form').classList.remove('o');load();
-  }catch(e){alert('Saqlab bo’lmadi. Rasm yoki ma’lumotni tekshiring.')}
-  btn.disabled=false;btn.textContent='Joylash';
-};
-$('list').onclick=function(e){
-  var k=e.target.getAttribute('data-k');if(!k)return;
-  var b=books.filter(function(x){return x.id===k})[0];if(!b)return;
-  var c=b.contact||'';
-  if(c.charAt(0)==='@'){var url='https://t.me/'+c.slice(1);tg?tg.openTelegramLink(url):window.open(url,'_blank')}
-  else{e.target.textContent=c}
-};
-chips();load();
+
+document.getElementById("search").addEventListener("input",render);
+
+document.getElementById("bookForm").addEventListener("submit",function(e){
+e.preventDefault();
+books.unshift({
+title:document.getElementById("title").value,
+author:document.getElementById("author").value,
+price:Number(document.getElementById("price").value),
+category:document.getElementById("category").value,
+condition:document.getElementById("condition").value,
+phone:document.getElementById("phone").value,
+telegram:document.getElementById("telegram").value
+});
+save();
+this.reset();
+currentCategory="Barchasi";
+render();
+alert("Kitob e'lon qilindi!");
+});
+
+save();
+render();
 </script>
 </body>
 </html>
+
