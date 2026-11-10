@@ -1,98 +1,506 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BookSavdo — Kitobga ikkinchi hayot!</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#fffaf5;color:#292929}
-header{background:#ff7518;color:white;padding:18px}
-header h1{margin:0;font-size:25px}
-header p{margin:5px 0 0}
-main{padding:16px;padding-bottom:90px}
-input,select,textarea,button{width:100%;padding:13px;margin:6px 0;border-radius:10px;border:1px solid #ddd;font-size:15px}
-button{background:#ff7518;color:white;border:0;font-weight:bold}
-.book{background:white;padding:12px;border-radius:14px;margin:12px 0;box-shadow:0 2px 8px #0001}
-.book img{width:100%;height:190px;object-fit:cover;border-radius:10px}
-.price{color:#ff7518;font-weight:bold;font-size:19px}
-nav{position:fixed;bottom:0;left:0;right:0;background:white;display:flex;justify-content:space-around;padding:12px 3px;box-shadow:0 -2px 10px #0001}
-nav button{width:auto;background:white;color:#444;font-size:12px;padding:8px}
-nav button.active{color:#ff7518}
-.hidden{display:none}
-h2{font-size:20px}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f47721">
+  <title>BookSavdo — Kitobga ikkinchi hayot!</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{--orange:#f47721;--dark:#242424;--muted:#777;--bg:#fffaf5;--line:#eee}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--dark);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+    header{background:var(--orange);color:#fff;padding:18px 16px 20px}
+    header .brand{font-size:25px;font-weight:800;letter-spacing:-.5px}
+    header p{margin:5px 0 0;font-size:13px;opacity:.95}
+    main{max-width:720px;margin:auto;padding:16px 14px 100px}
+    h2{font-size:21px;margin:8px 0 14px}
+    h3{margin:8px 0;font-size:17px}
+    input,select,textarea{display:block;width:100%;padding:13px 12px;margin:9px 0;border:1px solid #e5e1dc;border-radius:11px;background:#fff;font-size:16px;color:#222}
+    textarea{min-height:95px;resize:vertical}
+    button{border:0;border-radius:11px;background:var(--orange);color:#fff;padding:12px 15px;font-size:15px;font-weight:700;cursor:pointer}
+    button.secondary{background:#fff0e5;color:#b94f08}
+    button.danger{background:#fff0f0;color:#b42318}
+    button:disabled{opacity:.6}
+    .full{width:100%;margin-top:8px}
+    .hidden{display:none!important}
+    .muted{color:var(--muted);font-size:13px}
+    .toolbar{display:flex;gap:8px;align-items:center}
+    .toolbar input{flex:1}
+    .book-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .book{background:#fff;border:1px solid #f0ebe5;border-radius:15px;padding:10px;min-width:0;box-shadow:0 3px 12px #3b24100a}
+    .book img{width:100%;height:155px;object-fit:cover;border-radius:10px;background:#f2eee9}
+    .book .title{font-weight:750;margin:9px 0 4px;overflow-wrap:anywhere}
+    .price{color:var(--orange);font-weight:800;margin:7px 0}
+    .book button{width:100%;margin-top:6px}
+    .empty,.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px}
+    .panel{margin:12px 0}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .actions button{flex:1}
+    nav{position:fixed;z-index:5;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #eee;display:flex;justify-content:space-around;padding:7px 2px max(7px,env(safe-area-inset-bottom))}
+    nav button{background:transparent;color:#666;font-size:11px;font-weight:600;padding:6px 5px;min-width:56px}
+    nav button.active{color:var(--orange);background:#fff4eb}
+    nav span{display:block;font-size:19px;margin-bottom:3px}
+    .detail-image{width:100%;max-height:320px;object-fit:contain;background:#f3eee8;border-radius:13px}
+    a{color:#c9570b}
+    .status{display:inline-block;padding:4px 8px;border-radius:20px;background:#e8f7ed;color:#18733b;font-size:12px}
+    @media(min-width:600px){.book-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.book img{height:180px}}
+  </style>
 </head>
 <body>
 
 <header>
-<h1>📚 BookSavdo</h1>
-<p>Kitobga ikkinchi hayot!</p>
+  <div class="brand">📚 BookSavdo</div>
+  <p>Kitobga ikkinchi hayot!</p>
 </header>
 
 <main>
-<section id="home">
-<h2>Kitoblar bozori</h2>
-<input id="search" placeholder="Kitob yoki muallifni qidiring..." oninput="loadBooks()">
-<div id="books">Kitoblar yuklanmoqda...</div>
-</section>
+  <section id="homePage">
+    <h2>Kitoblar bozori</h2>
+    <input id="searchInput" placeholder="Kitob nomi yoki muallifni qidiring..." oninput="loadBooks()">
+    <select id="categoryFilter" onchange="loadBooks()">
+      <option value="">Barcha toifalar</option>
+      <option>Badiiy</option><option>Tarix</option><option>Biznes</option>
+      <option>Diniy</option><option>Bolalar</option><option>Ilmiy</option><option>Boshqa</option>
+    </select>
+    <div id="booksList" class="book-grid">
+      <div class="empty">Kitoblar yuklanmoqda...</div>
+    </div>
+  </section>
 
-<section id="sell" class="hidden">
-<h2>Kitob sotish</h2>
-<input id="title" placeholder="Kitob nomi">
-<input id="author" placeholder="Muallif">
-<input id="price" type="number" placeholder="Narxi (so‘m)">
-<select id="cat">
-<option value="Badiiy">Badiiy</option>
-<option value="Tarix">Tarix</option>
-<option value="Biznes">Biznes</option>
-<option value="Diniy">Diniy</option>
-<option value="Bolalar">Bolalar</option>
-<option value="Boshqa">Boshqa</option>
-</select>
-<select id="cond">
-<option value="Yaxshi">Yaxshi holatda</option>
-<option value="O‘rtacha">O‘rtacha holatda</option>
-<option value="Yangi">Yangi</option>
-</select>
-<textarea id="description" placeholder="Kitob haqida qisqacha ma’lumot"></textarea>
-<input id="city" placeholder="Shahar">
-<input id="district" placeholder="Tuman">
-<input id="phone" placeholder="Telefon raqam">
-<input id="telegram" placeholder="Telegram username (@ bilan yoki @siz)">
-<input id="photo" type="file" accept="image/*">
-<button onclick="addBook()">Kitobni joylash</button>
-</section>
+  <section id="sellPage" class="hidden">
+    <h2>Kitob sotuvga qo‘yish</h2>
+    <div class="panel">
+      <p class="muted">Kitob joylash uchun avval profilingizga kiring.</p>
+      <input id="bookTitle" placeholder="Kitob nomi">
+      <input id="bookAuthor" placeholder="Muallif">
+      <input id="bookPrice" type="number" min="0" placeholder="Narxi (so‘m)">
+      <select id="bookCategory">
+        <option value="Badiiy">Badiiy</option>
+        <option value="Tarix">Tarix</option>
+        <option value="Biznes">Biznes</option>
+        <option value="Diniy">Diniy</option>
+        <option value="Bolalar">Bolalar</option>
+        <option value="Ilmiy">Ilmiy</option>
+        <option value="Boshqa">Boshqa</option>
+      </select>
+      <select id="bookCondition">
+        <option value="Yaxshi">Yaxshi holatda</option>
+        <option value="O‘rtacha">O‘rtacha holatda</option>
+        <option value="Yangi">Yangi</option>
+        <option value="Eskirgan">Eskirgan</option>
+      </select>
+      <textarea id="bookDescription" placeholder="Kitob nima haqida? Qisqacha tavsif yozing"></textarea>
+      <input id="bookCity" placeholder="Shahar">
+      <input id="bookDistrict" placeholder="Tuman">
+      <input id="bookPhone" type="tel" placeholder="Telefon raqam">
+      <input id="bookTelegram" placeholder="Telegram username (masalan: username)">
+      <label class="muted">Kitob rasmi</label>
+      <input id="bookPhoto" type="file" accept="image/*">
+      <button class="full" onclick="addBook()">Kitobni joylash</button>
+      <p id="sellMessage" class="muted"></p>
+    </div>
+  </section>
 
-<section id="profile" class="hidden">
-<h2>Shaxsiy kabinet</h2>
-<div id="auth">
-<input id="email" type="email" placeholder="Email">
-<input id="password" type="password" placeholder="Parol">
-<button onclick="signUp()">Ro‘yxatdan o‘tish</button>
-<button onclick="signIn()">Kirish</button>
-</div>
-<div id="account" class="hidden">
-<p id="userEmail"></p>
-<h3>Mening kitoblarim</h3>
-<div id="myBooks"></div>
-<button onclick="signOut()">Hisobdan chiqish</button>
-</div>
-</section>
+  <section id="favoritesPage" class="hidden">
+    <h2>Sevimli kitoblar</h2>
+    <div id="favoritesList" class="book-grid"></div>
+  </section>
 
-<section id="favorites" class="hidden">
-<h2>Sevimli kitoblar</h2>
-<div id="favoriteBooks"></div>
-</section>
+  <section id="profilePage" class="hidden">
+    <h2>Shaxsiy kabinet</h2>
+    <div id="authPanel" class="panel">
+      <input id="emailInput" type="email" placeholder="Email manzilingiz">
+      <input id="passwordInput" type="password" placeholder="Parol (kamida 6 belgi)">
+      <button class="full" onclick="signIn()">Kirish</button>
+      <button class="full secondary" onclick="signUp()">Ro‘yxatdan o‘tish</button>
+      <p id="authMessage" class="muted"></p>
+    </div>
+    <div id="accountPanel" class="panel hidden">
+      <p id="accountEmail"></p>
+      <h3>Mening e’lonlarim</h3>
+      <div id="myBooksList"></div>
+      <button class="full secondary" onclick="signOut()">Hisobdan chiqish</button>
+    </div>
+  </section>
+
+  <section id="detailPage" class="hidden">
+    <button class="secondary" onclick="showPage('homePage')">← Orqaga</button>
+    <div id="detailContent" class="panel"></div>
+  </section>
 </main>
 
 <nav>
-<button class="active" onclick="showPage('home',this)">🏠<br>Bosh sahifa</button>
-<button onclick="showPage('home',this)">🔎<br>Qidiruv</button>
-<button onclick="showPage('sell',this)">➕<br>Sotish</button>
-<button onclick="showPage('favorites',this)">❤️<br>Sevimli</button>
-<button onclick="showPage('profile',this)">👤<br>Profil</button>
+  <button class="active" onclick="showPage('homePage',this)"><span>🏠</span>Bosh sahifa</button>
+  <button onclick="focusSearch()"><span>🔎</span>Qidiruv</button>
+  <button onclick="showPage('sellPage',this)"><span>➕</span>Sotish</button>
+  <button onclick="showPage('favoritesPage',this)"><span>❤️</span>Sevimli</button>
+  <button onclick="showPage('profilePage',this)"><span>👤</span>Profil</button>
 </nav>
 
 <script>
+const SUPABASE_URL = "https://lszzpfiptmgsjrrrkdwj.supabase.co";
+const SUPABASE_KEY = "sb_publishable_G72FGzaa4mFQe5PS77dZaQ_cZUlF3O5";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let allBooks = [];
+let favorites = JSON.parse(localStorage.getItem("booksavdo_favorites") || "[]");
+
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[ch]));
+}
+
+function money(value) {
+  return Number(value || 0).toLocaleString("uz-UZ") + " so‘m";
+}
+
+function showPage(id, button) {
+  document.querySelectorAll("main section").forEach(s => s.classList.add("hidden"));
+  document.getElementById(id).classList.remove("hidden");
+  document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+  if (button) button.classList.add("active");
+  if (id === "homePage") loadBooks();
+  if (id === "favoritesPage") loadFavorites();
+  if (id === "profilePage") loadProfile();
+}
+
+function focusSearch() {
+  showPage("homePage", document.querySelectorAll("nav button")[1]);
+  setTimeout(() => document.getElementById("searchInput").focus(), 100);
+}
+
+function bookCard(b) {
+  const image = b.image_url
+    ? `<img src="${esc(b.image_url)}" alt="Kitob rasmi" loading="lazy">`
+    : `<div class="empty" style="height:155px;display:grid;place-items:center">📚 Rasm yo‘q</div>`;
+
+  return `<article class="book">
+    ${image}
+    <div class="title">${esc(b.title)}</div>
+    <div class="muted">${esc(b.author)}</div>
+    <div class="price">${money(b.price)}</div>
+    <div class="muted">${esc(b.city || "")}${b.district ? ", " + esc(b.district) : ""}</div>
+    ${b.is_sold ? '<span class="status">Sotilgan</span>' : ""}
+    <button onclick="openBook('${esc(b.id)}')">Batafsil</button>
+    <button class="secondary" onclick="toggleFavorite('${esc(b.id)}')">${favorites.includes(String(b.id)) ? "❤️ Saqlangan" : "♡ Sevimliga"}</button>
+  </article>`;
+}
+
+async function loadBooks() {
+  const box = document.getElementById("booksList");
+  box.innerHTML = '<div class="empty">Kitoblar yuklanmoqda...</div>';
+
+  const term = document.getElementById("searchInput").value.trim();
+  const cat = document.getElementById("categoryFilter").value;
+
+  let query = db.from("books").select("*").order("created_at", {ascending:false});
+
+  if (term) query = query.or(`title.ilike.%${term}%,author.ilike.%${term}%`);
+  if (cat) query = query.eq("cat", cat);
+
+  const {data, error} = await query;
+
+  if (error) {
+    box.innerHTML = `<div class="empty">Kitoblarni yuklashda xatolik: ${esc(error.message)}</div>`;
+    return;
+  }
+
+  allBooks = data || [];
+
+  box.innerHTML = allBooks.length
+    ? allBooks.map(bookCard).join("")
+    : '<div class="empty">Hozircha kitoblar yo‘q. Birinchi bo‘lib kitob joylang!</div>';
+}
+
+async function signUp() {
+  const email = document.getElementById("emailInput").value.trim();
+  const password = document.getElementById("passwordInput").value;
+  const msg = document.getElementById("authMessage");
+
+  if (!email || password.length < 6) {
+    msg.textContent = "Email kiriting va kamida 6 belgili parol tanlang.";
+    return;
+  }
+
+  const {error} = await db.auth.signUp({email, password});
+
+  msg.textContent = error
+    ? error.message
+    : "Tasdiqlash xati emailingizga yuborildi. Emailingizni tekshiring.";
+}
+
+async function signIn() {
+  const email = document.getElementById("emailInput").value.trim();
+  const password = document.getElementById("passwordInput").value;
+  const msg = document.getElementById("authMessage");
+
+  const {error} = await db.auth.signInWithPassword({email, password});
+
+  msg.textContent = error ? error.message : "Muvaffaqiyatli kirdingiz!";
+
+  if (!error) loadProfile();
+}
+
+async function signOut() {
+  const {error} = await db.auth.signOut();
+
+  if (error) alert(error.message);
+
+  currentUser = null;
+  loadProfile();
+}
+
+async function loadProfile() {
+  const {data} = await db.auth.getUser();
+  currentUser = data.user || null;
+
+  document.getElementById("authPanel").classList.toggle("hidden", !!currentUser);
+  document.getElementById("accountPanel").classList.toggle("hidden", !currentUser);
+
+  if (currentUser) {
+    document.getElementById("accountEmail").textContent = "Hisob: " + currentUser.email;
+    loadMyBooks();
+  }
+}
+
+async function addBook() {
+  const msg = document.getElementById("sellMessage");
+
+  const {data:userData, error:userError} = await db.auth.getUser();
+  const user = userData?.user;
+
+  if (userError || !user) {
+    msg.textContent = "Avval Profil bo‘limidan hisobingizga kiring.";
+    return;
+  }
+
+  const title = document.getElementById("bookTitle").value.trim();
+  const author = document.getElementById("bookAuthor").value.trim();
+  const price = Number(document.getElementById("bookPrice").value);
+
+  if (!title || !author || !Number.isFinite(price) || price <= 0) {
+    msg.textContent = "Kitob nomi, muallifi va to‘g‘ri narxni kiriting.";
+    return;
+  }
+
+  msg.textContent = "Kitob joylanmoqda...";
+
+  const file = document.getElementById("bookPhoto").files[0];
+  let image_url = null;
+
+  if (file) {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `${user.id}/${Date.now()}-${safeName}`;
+
+    const {error:uploadError} = await db.storage.from("book-images").upload(path, file);
+
+    if (uploadError) {
+      msg.textContent = "Rasm yuklanmadi: " + uploadError.message;
+      return;
+    }
+
+    image_url = db.storage.from("book-images").getPublicUrl(path).data.publicUrl;
+  }
+
+  const book = {
+    title,
+    author,
+    price,
+    cat: document.getElementById("bookCategory").value,
+    cond: document.getElementById("bookCondition").value,
+    description: document.getElementById("bookDescription").value.trim(),
+    city: document.getElementById("bookCity").value.trim(),
+    district: document.getElementById("bookDistrict").value.trim(),
+    phone: document.getElementById("bookPhone").value.trim(),
+    contact: document.getElementById("bookPhone").value.trim(),
+    telegram: document.getElementById("bookTelegram").value.trim().replace(/^@/,""),
+    image_url,
+    user_id: user.id,
+    seller_id: user.id
+  };
+
+  const {error} = await db.from("books").insert(book);
+
+  if (error) {
+    msg.textContent = "Joylashda xatolik: " + error.message;
+    return;
+  }
+
+  msg.textContent = "Kitob muvaffaqiyatli joylandi!";
+
+  ["bookTitle","bookAuthor","bookPrice","bookDescription","bookCity","bookDistrict","bookPhone","bookTelegram","bookPhoto"]
+    .forEach(id => document.getElementById(id).value = "");
+
+  await loadBooks();
+  showPage("homePage", document.querySelector("nav button"));
+}
+
+async function loadMyBooks() {
+  if (!currentUser) return;
+
+  const box = document.getElementById("myBooksList");
+  box.textContent = "Yuklanmoqda...";
+
+  const {data,error} = await db.from("books").select("*")
+    .eq("user_id", currentUser.id)
+    .order("created_at",{ascending:false});
+
+  if (error) {
+    box.textContent = error.message;
+    return;
+  }
+
+  box.innerHTML = (data || []).length ? data.map(b => `
+    <div class="panel">
+      <strong>${esc(b.title)}</strong>
+      <p class="price">${money(b.price)}</p>
+      <p class="muted">${b.is_sold ? "Sotilgan" : "Sotuvda"}</p>
+      <div class="actions">
+        <button class="secondary" onclick="editBook('${esc(b.id)}')">Tahrirlash</button>
+        <button class="secondary" onclick="markSold('${esc(b.id)}',${!b.is_sold})">${b.is_sold ? "Sotuvga qaytarish" : "Sotildi"}</button>
+        <button class="danger" onclick="deleteBook('${esc(b.id)}')">O‘chirish</button>
+      </div>
+    </div>`).join("") : '<p class="muted">Siz hali kitob joylamagansiz.</p>';
+}
+
+async function deleteBook(id) {
+  if (!currentUser || !confirm("Ushbu kitobni o‘chirasizmi?")) return;
+
+  const {error} = await db.from("books").delete()
+    .eq("id",id).eq("user_id",currentUser.id);
+
+  alert(error ? error.message : "Kitob o‘chirildi.");
+
+  loadMyBooks();
+  loadBooks();
+}
+
+async function markSold(id, sold) {
+  if (!currentUser) return;
+
+  const {error} = await db.from("books").update({is_sold:sold})
+    .eq("id",id).eq("user_id",currentUser.id);
+
+  if (error) alert(error.message);
+
+  loadMyBooks();
+  loadBooks();
+}
+
+async function editBook(id) {
+  const {data:b,error} = await db.from("books").select("*")
+    .eq("id",id).eq("user_id",currentUser.id).single();
+
+  if (error || !b) {
+    alert(error?.message || "Kitob topilmadi");
+    return;
+  }
+
+  const title = prompt("Kitob nomi:",b.title);
+  if (title === null) return;
+
+  const author = prompt("Muallif:",b.author);
+  if (author === null) return;
+
+  const priceText = prompt("Narxi (so‘m):",b.price);
+  if (priceText === null) return;
+
+  const price = Number(priceText);
+
+  if (!title.trim() || !author.trim() || !Number.isFinite(price) || price <= 0) {
+    alert("Ma’lumotlarni to‘g‘ri kiriting.");
+    return;
+  }
+
+  const {error:updateError} = await db.from("books").update({
+    title:title.trim(),
+    author:author.trim(),
+    price
+  }).eq("id",id).eq("user_id",currentUser.id);
+
+  alert(updateError ? updateError.message : "Kitob yangilandi.");
+
+  loadMyBooks();
+  loadBooks();
+}
+
+function toggleFavorite(id) {
+  id = String(id);
+
+  favorites = favorites.includes(id)
+    ? favorites.filter(x=>x!==id)
+    : [...favorites,id];
+
+  localStorage.setItem("booksavdo_favorites",JSON.stringify(favorites));
+  loadBooks();
+}
+
+async function loadFavorites() {
+  const box = document.getElementById("favoritesList");
+
+  if (!favorites.length) {
+    box.innerHTML = '<div class="empty">Sevimli kitoblaringiz hozircha yo‘q.</div>';
+    return;
+  }
+
+  const {data,error} = await db.from("books").select("*").in("id",favorites);
+
+  if (error) {
+    box.textContent = error.message;
+    return;
+  }
+
+  box.innerHTML = data?.length
+    ? data.map(bookCard).join("")
+    : '<div class="empty">Saqlangan kitoblar topilmadi.</div>';
+}
+
+async function openBook(id) {
+  const {data:b,error} = await db.from("books").select("*").eq("id",id).single();
+
+  if (error || !b) {
+    alert(error?.message || "Kitob topilmadi");
+    return;
+  }
+
+  const image = b.image_url
+    ? `<img class="detail-image" src="${esc(b.image_url)}" alt="Kitob rasmi">`
+    : "";
+
+  const phone = b.phone || b.contact || "";
+  const telegram = (b.telegram || "").replace(/^@/,"");
+
+  document.getElementById("detailContent").innerHTML = `
+    ${image}
+    <h2>${esc(b.title)}</h2>
+    <p><b>Muallif:</b> ${esc(b.author)}</p>
+    <p class="price">${money(b.price)}</p>
+    <p><b>Toifa:</b> ${esc(b.cat)}</p>
+    <p><b>Holati:</b> ${esc(b.cond)}</p>
+    <p>${esc(b.description || "Tavsif kiritilmagan.")}</p>
+    <p><b>Manzil:</b> ${esc(b.city || "")} ${esc(b.district || "")}</p>
+    ${b.is_sold ? '<p class="status">Sotilgan</p>' : ""}
+    ${phone ? `<a href="tel:${esc(phone)}"><button class="full">📞 Telefon qilish</button></a>` : ""}
+    ${telegram ? `<a href="https://t.me/${encodeURIComponent(telegram)}" target="_blank" rel="noopener"><button class="full secondary">✈️ Telegram orqali yozish</button></a>` : ""}
+    <button class="full secondary" onclick="toggleFavorite('${esc(b.id)}')">❤️ Sevimlilarga qo‘shish</button>`;
+
+  showPage("detailPage");
+}
+
+db.auth.onAuthStateChange((_event, session) => {
+  currentUser = session?.user || null;
+
+  if (!document.getElementById("profilePage").classList.contains("hidden")) {
+    loadProfile();
+  }
+});
+
+loadBooks();
+loadProfile();
+</script>
+
+</body>
+</html>
