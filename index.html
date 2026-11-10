@@ -1,10 +1,9 @@
-
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
+const db = createClient(
   "https://lszzpfiptmgsjrrrkdwj.supabase.co",
   "sb_publishable_G72FGzaa4mFQe5PS77dZaQ_cZUlF3O5"
 );
@@ -26,103 +25,87 @@ type Book = {
   is_sold?: boolean;
 };
 
+const categories = [
+  "Badiiy adabiyot",
+  "Tarix",
+  "Biznes",
+  "Psixologiya",
+  "Ilmiy",
+  "Bolalar kitoblari",
+  "Darsliklar"
+];
+
 export default function Home() {
   const [books, setBooks] = useState<Book[]>([]);
+  const [user, setUser] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Barchasi");
   const [page, setPage] = useState("home");
-  const [user, setUser] = useState<any>(null);
+  const [message, setMessage] = useState("");
   const [favorites, setFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
 
-  const [form, setForm] = useState({
-    title: "",
-    author: "",
-    price: "",
-    cat: "Badiiy adabiyot",
-    cond: "Yaxshi",
-    description: "",
-    city: "",
-    district: "",
-    phone: "",
-    telegram: ""
-  });
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
 
+  const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
+  const [price, setPrice] = useState("");
+  const [condition, setCondition] = useState("Yaxshi");
+  const [description, setDescription] = useState("");
+  const [city, setCity] = useState("");
+  const [district, setDistrict] = useState("");
+  const [phone, setPhone] = useState("");
+  const [telegram, setTelegram] = useState("");
+  const [bookCategory, setBookCategory] = useState(categories[0]);
   const [image, setImage] = useState<File | null>(null);
-
-  const [register, setRegister] = useState({
-    firstName: "",
-    lastName: "",
-    password: ""
-  });
-
-  const [login, setLogin] = useState({
-    username: "",
-    password: ""
-  });
-
-  const categories = [
-    "Barchasi",
-    "Badiiy adabiyot",
-    "Tarix",
-    "Biznes",
-    "Psixologiya",
-    "Ilmiy",
-    "Bolalar kitoblari",
-    "Darsliklar"
-  ];
 
   async function loadBooks() {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("books")
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (!error) setBooks(data || []);
+    if (error) setMessage(error.message);
+    else setBooks((data || []) as Book[]);
     setLoading(false);
   }
 
   useEffect(() => {
     loadBooks();
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    const { data: listener } = supabase.auth.onAuthStateChange(
+
+    db.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+    });
+
+    const { data: listener } = db.auth.onAuthStateChange(
       (_event, session) => setUser(session?.user || null)
     );
+
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  const filteredBooks = useMemo(() => {
-    return books.filter((book) => {
-      const text = `${book.title} ${book.author}`.toLowerCase();
-      return (
-        text.includes(search.toLowerCase()) &&
-        (category === "Barchasi" || book.cat === category)
-      );
-    });
-  }, [books, search, category]);
-
-  async function signUp() {
-    if (!register.firstName || !register.lastName || !register.password) {
-      setMessage("Barcha maydonlarni to‘ldiring");
+  async function register() {
+    if (!firstName || !lastName || !password) {
+      setMessage("Ism, familiya va parolni kiriting");
       return;
     }
 
-    const username =
-      (register.firstName + register.lastName)
-        .toLowerCase()
-        .replace(/\s/g, "") +
+    const generated =
+      (firstName + lastName).toLowerCase().replace(/\s/g, "") +
       Math.floor(1000 + Math.random() * 9000);
 
-    const { data, error } = await supabase.auth.signUp({
-      email: username + "@booksavdo.com",
-      password: register.password,
+    const { data, error } = await db.auth.signUp({
+      email: generated + "@booksavdo.com",
+      password,
       options: {
         data: {
-          first_name: register.firstName,
-          last_name: register.lastName,
-          username
+          first_name: firstName,
+          last_name: lastName,
+          username: generated
         }
       }
     });
@@ -132,24 +115,32 @@ export default function Home() {
       return;
     }
 
-    if (data.user && data.session) {
-      setMessage("Ro‘yxatdan o‘tdingiz! Login: " + username);
-      setPage("home");
-    } else {
-      setMessage("Hisob yaratildi. Email tasdiqlash sozlamasini tekshiring.");
-    }
+    setMessage(
+      data.session
+        ? "Hisobingiz yaratildi. Login: " + generated
+        : "Hisob yaratildi. Email tasdiqlash sozlamasini tekshiring."
+    );
+
+    if (data.session) setPage("home");
   }
 
-  async function signIn() {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: login.username.includes("@")
-        ? login.username
-        : login.username + "@booksavdo.com",
-      password: login.password
+  async function login() {
+    if (!username || !password) {
+      setMessage("Login va parolni kiriting");
+      return;
+    }
+
+    const email = username.includes("@")
+      ? username
+      : username + "@booksavdo.com";
+
+    const { data, error } = await db.auth.signInWithPassword({
+      email,
+      password
     });
 
     if (error) {
-      setMessage("Login yoki parol noto‘g‘ri: " + error.message);
+      setMessage("Kirishda xatolik: " + error.message);
       return;
     }
 
@@ -158,7 +149,7 @@ export default function Home() {
   }
 
   async function logout() {
-    await supabase.auth.signOut();
+    await db.auth.signOut();
     setUser(null);
     setPage("home");
   }
@@ -166,16 +157,11 @@ export default function Home() {
   async function addBook() {
     if (!user) {
       setMessage("Avval hisobingizga kiring");
+      setPage("login");
       return;
     }
 
-    if (
-      !form.title ||
-      !form.author ||
-      !form.price ||
-      !form.phone ||
-      !form.city
-    ) {
+    if (!title || !author || !price || !city || !phone) {
       setMessage("Kitob nomi, muallif, narx, shahar va telefon majburiy");
       return;
     }
@@ -184,64 +170,58 @@ export default function Home() {
 
     if (image) {
       const fileName = `${user.id}/${Date.now()}-${image.name}`;
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await db.storage
         .from("book-images")
         .upload(fileName, image);
 
       if (uploadError) {
-        setMessage("Rasm yuklanmadi: " + uploadError.message);
+        setMessage("Rasm yuklash xatosi: " + uploadError.message);
         return;
       }
 
-      const { data } = supabase.storage
+      imageUrl = db.storage
         .from("book-images")
-        .getPublicUrl(fileName);
-
-      imageUrl = data.publicUrl;
+        .getPublicUrl(fileName).data.publicUrl;
     }
 
-    const { error } = await supabase.from("books").insert({
-      title: form.title,
-      author: form.author,
-      price: Number(form.price),
-      cat: form.cat,
-      cond: form.cond,
-      description: form.description,
-      city: form.city,
-      district: form.district,
-      phone: form.phone,
-      telegram: form.telegram,
-      contact: form.phone,
+    const { error } = await db.from("books").insert({
+      title,
+      author,
+      price: Number(price),
+      cat: bookCategory,
+      cond: condition,
+      description,
+      city,
+      district,
+      phone,
+      telegram,
+      contact: phone,
       image_url: imageUrl,
       user_id: user.id,
       seller_id: user.id
     });
 
     if (error) {
-      setMessage("Xatolik: " + error.message);
+      setMessage(error.message);
       return;
     }
 
-    setMessage("Kitob muvaffaqiyatli joylandi!");
-    setForm({
-      title: "",
-      author: "",
-      price: "",
-      cat: "Badiiy adabiyot",
-      cond: "Yaxshi",
-      description: "",
-      city: "",
-      district: "",
-      phone: "",
-      telegram: ""
-    });
+    setMessage("Kitob joylandi!");
+    setTitle("");
+    setAuthor("");
+    setPrice("");
+    setDescription("");
+    setCity("");
+    setDistrict("");
+    setPhone("");
+    setTelegram("");
     setImage(null);
     await loadBooks();
     setPage("home");
   }
 
   async function deleteBook(id: string) {
-    const { error } = await supabase
+    const { error } = await db
       .from("books")
       .delete()
       .eq("id", id)
@@ -256,8 +236,8 @@ export default function Home() {
     loadBooks();
   }
 
-  async function markSold(id: string) {
-    const { error } = await supabase
+  async function soldBook(id: string) {
+    const { error } = await db
       .from("books")
       .update({ is_sold: true })
       .eq("id", id)
@@ -271,140 +251,137 @@ export default function Home() {
     loadBooks();
   }
 
-  const money = (price: number) =>
-    new Intl.NumberFormat("uz-UZ").format(price) + " so‘m";
+  const filtered = books.filter((book) => {
+    const matches =
+      (book.title + " " + book.author)
+        .toLowerCase()
+        .includes(search.toLowerCase());
+
+    return (
+      matches &&
+      (category === "Barchasi" || book.cat === category)
+    );
+  });
+
+  const money = (value: number) =>
+    new Intl.NumberFormat("uz-UZ").format(value) + " so‘m";
 
   return (
-    <main className="min-h-screen bg-[#f4f6fa] text-[#15233b]">
-      <header className="sticky top-0 z-50 bg-[#101d36] text-white shadow-lg">
+    <main className="min-h-screen bg-slate-100 text-slate-900">
+      <header className="sticky top-0 z-50 bg-[#101d36] text-white shadow-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4">
           <button onClick={() => setPage("home")} className="text-left">
-            <div className="text-2xl font-black tracking-tight">
+            <div className="text-2xl font-black">
               <span className="text-orange-400">Book</span>Savdo
             </div>
-            <div className="text-xs text-slate-300">
+            <p className="text-xs text-slate-300">
               Kitobga ikkinchi hayot!
-            </div>
+            </p>
           </button>
 
-          <div className="hidden flex-1 md:block md:max-w-xl">
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Kitob yoki muallifni qidiring..."
-              className="w-full rounded-xl bg-white px-4 py-3 text-black outline-none"
-            />
-          </div>
+          <button
+            onClick={() => setPage(user ? "add" : "login")}
+            className="rounded-xl bg-orange-500 px-4 py-3 font-bold"
+          >
+            + Kitob sotish
+          </button>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage("favorites")}
-              className="rounded-xl bg-white/10 px-3 py-2"
-            >
-              ♡
-            </button>
-            <button
-              onClick={() => setPage(user ? "add" : "login")}
-              className="rounded-xl bg-orange-500 px-3 py-2 font-bold"
-            >
-              + Sotish
-            </button>
-            <button
-              onClick={() => setPage(user ? "account" : "login")}
-              className="rounded-xl bg-white/10 px-3 py-2"
-            >
-              {user ? "Kabinet" : "Kirish"}
-            </button>
-          </div>
+          <button
+            onClick={() => setPage(user ? "account" : "login")}
+            className="rounded-xl bg-white/10 px-4 py-3"
+          >
+            {user ? "Kabinet" : "Kirish"}
+          </button>
         </div>
 
-        <div className="px-4 pb-3 md:hidden">
+        <div className="mx-auto max-w-7xl px-4 pb-4">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Kitob qidirish..."
-            className="w-full rounded-xl bg-white px-4 py-3 text-black"
+            placeholder="Kitob yoki muallifni qidiring..."
+            className="w-full rounded-xl bg-white p-3 text-black outline-none"
           />
         </div>
       </header>
 
-      <section className="mx-auto max-w-7xl px-4 py-7">
-        <div className="rounded-3xl bg-gradient-to-r from-[#172b50] to-[#263f70] p-7 text-white md:p-12">
-          <div className="max-w-2xl">
-            <span className="rounded-full bg-orange-500 px-3 py-1 text-xs font-bold">
-              KITOBLAR MARKETPLACE
-            </span>
-            <h1 className="mt-5 text-3xl font-black md:text-5xl">
-              O‘qilgan kitoblar yangi egasini kutmoqda!
-            </h1>
-            <p className="mt-4 text-slate-200">
-              Sevimli kitoblaringizni arzon narxda toping yoki o‘qib
-              bo‘lgan kitoblaringizni soting.
-            </p>
-            <button
-              onClick={() => setPage("add")}
-              className="mt-6 rounded-xl bg-orange-500 px-6 py-3 font-bold"
-            >
-              Kitob sotishni boshlash →
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-7 flex gap-2 overflow-x-auto pb-2">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategory(cat)}
-              className={`shrink-0 rounded-full px-5 py-3 text-sm font-bold ${
-                category === cat
-                  ? "bg-orange-500 text-white"
-                  : "bg-white text-slate-700"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
+      <div className="mx-auto max-w-7xl px-4 py-7">
         {message && (
-          <div className="my-5 rounded-xl bg-orange-100 p-4 text-orange-900">
+          <div className="mb-5 rounded-xl bg-orange-100 p-4 text-orange-900">
             {message}
             <button
               onClick={() => setMessage("")}
               className="float-right font-bold"
             >
-              ✕
+              X
             </button>
           </div>
         )}
 
         {page === "home" && (
           <>
-            <div className="mb-5 mt-7 flex items-center justify-between">
+            <section className="rounded-3xl bg-gradient-to-r from-[#142747] to-[#304d7c] p-8 text-white md:p-12">
+              <p className="font-bold text-orange-400">
+                BOOKSAVDO MARKETPLACE
+              </p>
+              <h1 className="mt-4 text-3xl font-black md:text-5xl">
+                O‘qilgan kitoblar yangi egasini kutmoqda!
+              </h1>
+              <p className="mt-4 text-slate-200">
+                Sevimli kitoblaringizni arzon narxda toping.
+              </p>
+              <button
+                onClick={() => setPage(user ? "add" : "login")}
+                className="mt-6 rounded-xl bg-orange-500 px-6 py-3 font-bold"
+              >
+                Kitob joylash →
+              </button>
+            </section>
+
+            <h2 className="mb-4 mt-8 text-2xl font-black">
+              Kategoriyalar
+            </h2>
+
+            <div className="flex gap-2 overflow-x-auto pb-3">
+              {["Barchasi", ...categories].map((item) => (
+                <button
+                  key={item}
+                  onClick={() => setCategory(item)}
+                  className={`shrink-0 rounded-full px-5 py-3 text-sm font-bold ${
+                    category === item
+                      ? "bg-orange-500 text-white"
+                      : "bg-white"
+                  }`}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+
+            <div className="mb-5 mt-6 flex justify-between">
               <h2 className="text-2xl font-black">Yangi kitoblar</h2>
-              <span className="text-sm text-slate-500">
-                {filteredBooks.length} ta kitob
-              </span>
+              <span>{filtered.length} ta kitob</span>
             </div>
 
             {loading ? (
               <p>Yuklanmoqda...</p>
-            ) : filteredBooks.length === 0 ? (
-              <div className="rounded-2xl bg-white p-12 text-center">
+            ) : filtered.length === 0 ? (
+              <div className="rounded-2xl bg-white p-10 text-center">
                 <div className="text-5xl">📚</div>
-                <h3 className="mt-4 text-xl font-bold">Hozircha kitob yo‘q</h3>
+                <h3 className="mt-3 text-xl font-bold">
+                  Hozircha kitob yo‘q
+                </h3>
                 <p className="mt-2 text-slate-500">
                   Birinchi bo‘lib kitob joylang!
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5">
-                {filteredBooks.map((book) => (
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                {filtered.map((book) => (
                   <article
                     key={book.id}
                     className="overflow-hidden rounded-2xl bg-white shadow-sm"
                   >
-                    <div className="relative flex h-48 items-center justify-center bg-slate-100">
+                    <div className="flex h-48 items-center justify-center bg-slate-200">
                       {book.image_url ? (
                         <img
                           src={book.image_url}
@@ -414,55 +391,45 @@ export default function Home() {
                       ) : (
                         <span className="text-6xl">📖</span>
                       )}
-                      <button
-                        onClick={() =>
-                          setFavorites((old) =>
-                            old.includes(book.id)
-                              ? old.filter((x) => x !== book.id)
-                              : [...old, book.id]
-                          )
-                        }
-                        className="absolute right-3 top-3 rounded-full bg-white px-3 py-2"
-                      >
-                        {favorites.includes(book.id) ? "❤️" : "♡"}
-                      </button>
-                      {book.is_sold && (
-                        <span className="absolute bottom-2 left-2 rounded-lg bg-red-600 px-3 py-1 text-white">
-                          Sotilgan
-                        </span>
-                      )}
                     </div>
 
                     <div className="p-3">
-                      <div className="text-xs text-orange-600">
-                        {book.cat}
-                      </div>
-                      <h3 className="mt-1 line-clamp-2 font-bold">
-                        {book.title}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {book.author}
-                      </p>
-                      <div className="mt-3 font-black text-[#172b50]">
-                        {money(book.price)}
-                      </div>
+                      <p className="text-xs text-orange-600">{book.cat}</p>
+                      <h3 className="mt-1 font-bold">{book.title}</h3>
+                      <p className="text-sm text-slate-500">{book.author}</p>
+                      <p className="mt-3 font-black">{money(book.price)}</p>
                       <p className="mt-1 text-xs text-slate-500">
                         {book.city} {book.district}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs">
                         Holati: {book.cond}
                       </p>
 
                       {book.description && (
-                        <p className="mt-2 line-clamp-3 text-xs text-slate-600">
+                        <p className="mt-2 text-xs text-slate-600">
                           {book.description}
                         </p>
                       )}
 
+                      <button
+                        onClick={() =>
+                          setFavorites((old) =>
+                            old.includes(book.id)
+                              ? old.filter((id) => id !== book.id)
+                              : [...old, book.id]
+                          )
+                        }
+                        className="mt-3 w-full rounded-lg bg-slate-100 p-2"
+                      >
+                        {favorites.includes(book.id)
+                          ? "❤️ Sevimlilardan"
+                          : "♡ Sevimlilarga"}
+                      </button>
+
                       {book.phone && (
                         <a
                           href={`tel:${book.phone}`}
-                          className="mt-3 block rounded-lg bg-[#172b50] py-2 text-center text-sm font-bold text-white"
+                          className="mt-2 block rounded-lg bg-[#172b50] p-2 text-center text-sm font-bold text-white"
                         >
                           ☎ Qo‘ng‘iroq qilish
                         </a>
@@ -477,10 +444,16 @@ export default function Home() {
                           }
                           target="_blank"
                           rel="noreferrer"
-                          className="mt-2 block rounded-lg bg-sky-500 py-2 text-center text-sm font-bold text-white"
+                          className="mt-2 block rounded-lg bg-sky-500 p-2 text-center text-sm font-bold text-white"
                         >
                           Telegram
                         </a>
+                      )}
+
+                      {book.is_sold && (
+                        <p className="mt-2 text-center font-bold text-red-600">
+                          SOTILGAN
+                        </p>
                       )}
                     </div>
                   </article>
@@ -491,41 +464,41 @@ export default function Home() {
         )}
 
         {page === "add" && (
-          <section className="mx-auto mt-8 max-w-2xl rounded-3xl bg-white p-6 shadow-sm">
+          <section className="mx-auto max-w-2xl rounded-3xl bg-white p-6">
             <h2 className="mb-5 text-2xl font-black">Kitob joylash</h2>
 
             <div className="grid gap-4">
               <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder="Kitob nomi"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
                 className="rounded-xl border p-3"
               />
               <input
+                value={author}
+                onChange={(e) => setAuthor(e.target.value)}
                 placeholder="Muallif"
-                value={form.author}
-                onChange={(e) => setForm({ ...form, author: e.target.value })}
                 className="rounded-xl border p-3"
               />
               <input
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
                 type="number"
                 placeholder="Narxi (so‘m)"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
                 className="rounded-xl border p-3"
               />
               <select
-                value={form.cat}
-                onChange={(e) => setForm({ ...form, cat: e.target.value })}
+                value={bookCategory}
+                onChange={(e) => setBookCategory(e.target.value)}
                 className="rounded-xl border p-3"
               >
-                {categories.slice(1).map((c) => (
-                  <option key={c}>{c}</option>
+                {categories.map((item) => (
+                  <option key={item}>{item}</option>
                 ))}
               </select>
               <select
-                value={form.cond}
-                onChange={(e) => setForm({ ...form, cond: e.target.value })}
+                value={condition}
+                onChange={(e) => setCondition(e.target.value)}
                 className="rounded-xl border p-3"
               >
                 <option>Yangi</option>
@@ -534,45 +507,38 @@ export default function Home() {
                 <option>Eski</option>
               </select>
               <textarea
-                placeholder="Kitob haqida qisqacha ma’lumot"
-                value={form.description}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Kitob haqida ma’lumot"
                 className="rounded-xl border p-3"
               />
               <input
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
                 placeholder="Shahar"
-                value={form.city}
-                onChange={(e) => setForm({ ...form, city: e.target.value })}
                 className="rounded-xl border p-3"
               />
               <input
+                value={district}
+                onChange={(e) => setDistrict(e.target.value)}
                 placeholder="Tuman"
-                value={form.district}
-                onChange={(e) =>
-                  setForm({ ...form, district: e.target.value })
-                }
                 className="rounded-xl border p-3"
               />
               <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 type="tel"
                 placeholder="Telefon raqam (majburiy)"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 className="rounded-xl border p-3"
-                required
               />
               <input
-                placeholder="Telegram username (ixtiyoriy)"
-                value={form.telegram}
-                onChange={(e) =>
-                  setForm({ ...form, telegram: e.target.value })
-                }
+                value={telegram}
+                onChange={(e) => setTelegram(e.target.value)}
+                placeholder="Telegram (ixtiyoriy)"
                 className="rounded-xl border p-3"
               />
-              <label className="rounded-xl border border-dashed p-5 text-center">
-                📷 Kitob rasmini tanlang
+              <label className="rounded-xl border border-dashed p-4">
+                Kitob rasmini tanlang
                 <input
                   type="file"
                   accept="image/*"
@@ -582,7 +548,7 @@ export default function Home() {
               </label>
               <button
                 onClick={addBook}
-                className="rounded-xl bg-orange-500 p-4 font-black text-white"
+                className="rounded-xl bg-orange-500 p-4 font-bold text-white"
               >
                 Kitobni joylash
               </button>
@@ -590,28 +556,61 @@ export default function Home() {
           </section>
         )}
 
-        {page === "login" && (
-          <section className="mx-auto mt-8 max-w-md rounded-3xl bg-white p-6 shadow">
-            <h2 className="text-2xl font-black">Hisobga kirish</h2>
+        {page === "register" && (
+          <section className="mx-auto max-w-md rounded-3xl bg-white p-6">
+            <h2 className="text-2xl font-black">Ro‘yxatdan o‘tish</h2>
             <input
-              placeholder="Login"
-              value={login.username}
-              onChange={(e) =>
-                setLogin({ ...login, username: e.target.value })
-              }
-              className="mt-5 w-full rounded-xl border p-3"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="Ism"
+              className="mt-4 w-full rounded-xl border p-3"
             />
             <input
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Familiya"
+              className="mt-3 w-full rounded-xl border p-3"
+            />
+            <input
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               type="password"
               placeholder="Parol"
-              value={login.password}
-              onChange={(e) =>
-                setLogin({ ...login, password: e.target.value })
-              }
               className="mt-3 w-full rounded-xl border p-3"
             />
             <button
-              onClick={signIn}
+              onClick={register}
+              className="mt-4 w-full rounded-xl bg-orange-500 p-3 font-bold text-white"
+            >
+              Hisob yaratish
+            </button>
+            <button
+              onClick={() => setPage("login")}
+              className="mt-3 w-full rounded-xl bg-slate-100 p-3"
+            >
+              Hisobim bor
+            </button>
+          </section>
+        )}
+
+        {page === "login" && (
+          <section className="mx-auto max-w-md rounded-3xl bg-white p-6">
+            <h2 className="text-2xl font-black">Hisobga kirish</h2>
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Login"
+              className="mt-4 w-full rounded-xl border p-3"
+            />
+            <input
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              type="password"
+              placeholder="Parol"
+              className="mt-3 w-full rounded-xl border p-3"
+            />
+            <button
+              onClick={login}
               className="mt-4 w-full rounded-xl bg-[#172b50] p-3 font-bold text-white"
             >
               Kirish
@@ -625,77 +624,39 @@ export default function Home() {
           </section>
         )}
 
-        {page === "register" && (
-          <section className="mx-auto mt-8 max-w-md rounded-3xl bg-white p-6 shadow">
-            <h2 className="text-2xl font-black">Ro‘yxatdan o‘tish</h2>
-            <input
-              placeholder="Ism"
-              value={register.firstName}
-              onChange={(e) =>
-                setRegister({ ...register, firstName: e.target.value })
-              }
-              className="mt-5 w-full rounded-xl border p-3"
-            />
-            <input
-              placeholder="Familiya"
-              value={register.lastName}
-              onChange={(e) =>
-                setRegister({ ...register, lastName: e.target.value })
-              }
-              className="mt-3 w-full rounded-xl border p-3"
-            />
-            <input
-              type="password"
-              placeholder="Parol"
-              value={register.password}
-              onChange={(e) =>
-                setRegister({ ...register, password: e.target.value })
-              }
-              className="mt-3 w-full rounded-xl border p-3"
-            />
-            <button
-              onClick={signUp}
-              className="mt-4 w-full rounded-xl bg-orange-500 p-3 font-bold text-white"
-            >
-              Hisob yaratish
-            </button>
-          </section>
-        )}
-
         {page === "account" && (
-          <section className="mx-auto mt-8 max-w-2xl rounded-3xl bg-white p-6">
+          <section className="rounded-3xl bg-white p-6">
             <h2 className="text-2xl font-black">Shaxsiy kabinet</h2>
-            <p className="mt-2 text-slate-500">{user?.email}</p>
-            <h3 className="mb-4 mt-6 text-xl font-bold">Mening kitoblarim</h3>
+            <h3 className="mb-4 mt-6 font-bold">Mening kitoblarim</h3>
+
             {books
-              .filter((b) => b.user_id === user?.id)
+              .filter((book) => book.user_id === user?.id)
               .map((book) => (
                 <div
                   key={book.id}
-                  className="mb-3 flex items-center justify-between gap-3 rounded-xl border p-3"
+                  className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3"
                 >
                   <div>
                     <b>{book.title}</b>
-                    <p className="text-sm text-slate-500">
-                      {money(book.price)}
-                    </p>
+                    <p>{money(book.price)}</p>
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => markSold(book.id)}
-                      className="rounded-lg bg-green-100 px-3 py-2 text-green-800"
+                      onClick={() => soldBook(book.id)}
+                      className="rounded-lg bg-green-100 p-2 text-green-800"
                     >
                       Sotildi
                     </button>
                     <button
                       onClick={() => deleteBook(book.id)}
-                      className="rounded-lg bg-red-100 px-3 py-2 text-red-700"
+                      className="rounded-lg bg-red-100 p-2 text-red-700"
                     >
                       O‘chirish
                     </button>
                   </div>
                 </div>
               ))}
+
             <button
               onClick={logout}
               className="mt-5 rounded-xl bg-red-600 px-5 py-3 font-bold text-white"
@@ -706,29 +667,25 @@ export default function Home() {
         )}
 
         {page === "favorites" && (
-          <section className="mt-8">
+          <section>
             <h2 className="mb-5 text-2xl font-black">Sevimli kitoblar</h2>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              {books
-                .filter((b) => favorites.includes(b.id))
-                .map((book) => (
-                  <div key={book.id} className="rounded-xl bg-white p-4">
-                    <b>{book.title}</b>
-                    <p>{money(book.price)}</p>
-                  </div>
-                ))}
-            </div>
+            {books
+              .filter((book) => favorites.includes(book.id))
+              .map((book) => (
+                <div key={book.id} className="mb-3 rounded-xl bg-white p-4">
+                  <b>{book.title}</b>
+                  <p>{money(book.price)}</p>
+                </div>
+              ))}
           </section>
         )}
-      </section>
+      </div>
 
-      <footer className="mt-16 bg-[#101d36] px-4 py-8 text-center text-white">
-        <div className="text-2xl font-black">
+      <footer className="mt-12 bg-[#101d36] p-8 text-center text-white">
+        <h2 className="text-2xl font-black">
           <span className="text-orange-400">Book</span>Savdo
-        </div>
-        <p className="mt-2 text-sm text-slate-300">
-          Kitobga ikkinchi hayot!
-        </p>
+        </h2>
+        <p className="mt-2 text-slate-300">Kitobga ikkinchi hayot!</p>
       </footer>
     </main>
   );
