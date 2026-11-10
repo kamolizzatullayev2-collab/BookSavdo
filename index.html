@@ -11,29 +11,33 @@ header{background:#f47721;color:white;padding:18px;position:sticky;top:0;z-index
 header h2{margin:0;font-size:25px}
 header p{margin:5px 0 0;font-size:13px}
 main{padding:16px;max-width:700px;margin:auto}
-.page{display:none}
-.page.active{display:block}
-.search{width:100%;padding:14px;border:1px solid #ddd;border-radius:12px;font-size:16px}
+.page{display:none}.page.active{display:block}
 h3{color:#e96c17}
+.search,input,select{width:100%;padding:13px;margin:7px 0;border:1px solid #ddd;border-radius:10px;font-size:15px}
 .categories{display:flex;gap:8px;overflow:auto;margin:15px 0}
 .categories button{border:0;background:#ffe8d7;padding:10px 15px;border-radius:20px;white-space:nowrap}
 .categories button.active{background:#f47721;color:white}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.card{background:white;border:1px solid #eee;border-radius:14px;padding:12px}
-.cover{height:115px;background:#fff0e3;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:48px}
-.card h4{margin:10px 0 5px;font-size:15px}
-.muted{font-size:12px;color:#777}
-.price{font-weight:bold;color:#e96c17;margin:10px 0}
-.card a{display:block;text-align:center;background:#f47721;color:white;padding:10px;border-radius:9px;text-decoration:none;margin-top:7px}
-.card button{border:0;background:none;color:#e47721;font-size:20px}
-form input,form select{width:100%;padding:13px;margin:7px 0;border:1px solid #ddd;border-radius:10px;font-size:15px}
+.card{background:white;border:1px solid #eee;border-radius:14px;padding:10px;min-width:0}
+.cover{width:100%;height:145px;object-fit:cover;background:#fff0e3;border-radius:10px}
+.placeholder{height:145px;background:#fff0e3;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:48px}
+.card h4{margin:9px 0 5px;font-size:15px}
+.muted{font-size:12px;color:#777;overflow-wrap:anywhere}
+.price{font-weight:bold;color:#e96c17;margin:9px 0}
+.card a{display:block;text-align:center;background:#f47721;color:white;padding:9px;border-radius:9px;text-decoration:none;margin-top:7px;font-size:13px;overflow-wrap:anywhere}
+.card button{border:0;border-radius:8px;padding:9px;margin-top:7px;width:100%;background:#fff0e3;color:#b9530c}
+.card .delete{background:#ffe5e5;color:#bd2222}
+.card .sold{background:#e4f5e7;color:#237c35}
+form{background:white;border:1px solid #eee;border-radius:14px;padding:15px}
 form button,.action{width:100%;padding:14px;background:#f47721;color:white;border:0;border-radius:10px;font-size:16px;margin-top:10px}
-.panel{background:white;border:1px solid #eee;border-radius:14px;padding:16px;margin:12px 0}
+.panel{background:white;border:1px solid #eee;border-radius:14px;padding:15px;margin:12px 0}
 nav{position:fixed;bottom:0;left:0;width:100%;height:72px;background:white;border-top:1px solid #eee;display:flex;justify-content:space-around;align-items:center;z-index:10;padding-bottom:env(safe-area-inset-bottom)}
 nav button{border:0;background:none;color:#777;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11px;flex:1}
 nav button span{font-size:22px}
 nav button.active{color:#f47721;font-weight:bold}
-.empty{text-align:center;color:#888;padding:30px}
+.empty{text-align:center;color:#888;padding:25px;grid-column:1/-1}
+#preview{width:100%;max-height:220px;object-fit:contain;display:none;margin:8px 0;border-radius:10px}
+.status{font-size:12px;color:#237c35;font-weight:bold}
 </style>
 </head>
 <body>
@@ -46,7 +50,7 @@ nav button.active{color:#f47721;font-weight:bold}
 <main>
 
 <section class="page active" id="home">
-<h3>Kitoblar katalogi</h3>
+<h3>📚 Kitoblar katalogi</h3>
 <input class="search" id="search" placeholder="🔍 Kitob yoki muallifni qidiring">
 <div class="categories">
 <button class="active" onclick="filterBooks('Barchasi',this)">Barchasi</button>
@@ -60,29 +64,42 @@ nav button.active{color:#f47721;font-weight:bold}
 
 <section class="page" id="searchPage">
 <h3>🔍 Qidiruv</h3>
-<input class="search" id="search2" placeholder="Kitob nomini yozing...">
+<input id="search2" placeholder="Kitob yoki muallif nomi">
 <div class="grid" id="searchResults"></div>
 </section>
 
 <section class="page" id="sell">
-<h3>➕ Kitob sotish</h3>
-<div class="panel">
-<p>Kitobingiz haqida ma'lumot kiriting.</p>
+<h3>➕ Kitobingizni sotuvga qo‘ying</h3>
 <form id="bookForm">
+<label>Kitob rasmi</label>
+<input type="file" id="photo" accept="image/*" required>
+<img id="preview" alt="Kitob rasmi">
+
 <input id="title" placeholder="Kitob nomi" required>
 <input id="author" placeholder="Muallif" required>
-<input id="price" type="number" min="1" placeholder="Narxi (so'm)" required>
+<input id="price" type="number" min="1" placeholder="Narxi (so‘m)" required>
+
 <select id="category">
-<option>Badiiy</option><option>Biznes</option><option>Tarix</option><option>Darslik</option>
+<option>Badiiy</option>
+<option>Biznes</option>
+<option>Tarix</option>
+<option>Darslik</option>
 </select>
+
 <select id="condition">
-<option>Yangi kabi</option><option>Yaxshi holatda</option><option>O‘qilgan</option>
+<option>Yangi kabi</option>
+<option>Yaxshi holatda</option>
+<option>O‘qilgan</option>
 </select>
-<input id="phone" placeholder="Telefon raqami (+998...)">
-<input id="telegram" placeholder="Telegram username">
-<button type="submit">Kitobni e'lon qilish</button>
+
+<label>Telefon raqamingiz</label>
+<input id="phone" type="tel" placeholder="+998 90 123 45 67" required>
+
+<label>Telegram username</label>
+<input id="telegram" placeholder="@username" required>
+
+<button type="submit">📚 Kitobni e'lon qilish</button>
 </form>
-</div>
 </section>
 
 <section class="page" id="favorites">
@@ -91,11 +108,8 @@ nav button.active{color:#f47721;font-weight:bold}
 </section>
 
 <section class="page" id="profile">
-<h3>👤 Mening profilim</h3>
-<div class="panel">
-<h3>BookSavdo foydalanuvchisi</h3>
-<p>O‘zingiz joylagan kitoblar shu yerda ko‘rinadi.</p>
-</div>
+<h3>👤 Mening e'lonlarim</h3>
+<p class="muted">Bu qurilmada joylagan kitoblaringiz.</p>
 <div class="grid" id="myBooks"></div>
 </section>
 
@@ -111,52 +125,80 @@ nav button.active{color:#f47721;font-weight:bold}
 
 <script>
 const sample=[
-{id:1,title:"O‘tkan kunlar",author:"Abdulla Qodiriy",price:35000,category:"Badiiy",condition:"Yaxshi holatda"},
-{id:2,title:"Mehrobdan chayon",author:"Abdulla Qodiriy",price:30000,category:"Badiiy",condition:"O‘qilgan"},
-{id:3,title:"Boy ota, kambag‘al ota",author:"Robert Kiyosaki",price:45000,category:"Biznes",condition:"Yangi kabi"},
-{id:4,title:"Tarixdan hikoyalar",author:"Muallif",price:25000,category:"Tarix",condition:"Yaxshi holatda"}
+{id:1,title:"O‘tkan kunlar",author:"Abdulla Qodiriy",price:35000,category:"Badiiy",condition:"Yaxshi holatda",phone:"",telegram:"",image:"",owner:false,sold:false},
+{id:2,title:"Mehrobdan chayon",author:"Abdulla Qodiriy",price:30000,category:"Badiiy",condition:"O‘qilgan",phone:"",telegram:"",image:"",owner:false,sold:false},
+{id:3,title:"Boy ota, kambag‘al ota",author:"Robert Kiyosaki",price:45000,category:"Biznes",condition:"Yangi kabi",phone:"",telegram:"",image:"",owner:false,sold:false}
 ];
 
 let books=JSON.parse(localStorage.getItem("bs_books")||"null")||sample;
 let favorites=JSON.parse(localStorage.getItem("bs_favs")||"[]");
-let mine=JSON.parse(localStorage.getItem("bs_mine")||"[]");
 let category="Barchasi";
+let selectedImage="";
 
 function safe(s){
-return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 function save(){
+try{
 localStorage.setItem("bs_books",JSON.stringify(books));
 localStorage.setItem("bs_favs",JSON.stringify(favorites));
-localStorage.setItem("bs_mine",JSON.stringify(mine));
+return true;
+}catch(e){
+alert("Xotira to‘ldi. Kichikroq rasm tanlang.");
+return false;
 }
-function card(b){
+}
+function card(b,manage=false){
+let photo=b.image
+?`<img class="cover" src="${b.image}" alt="Kitob rasmi">`
+:`<div class="placeholder">📚</div>`;
 return `<div class="card">
-<div class="cover">📚</div>
+${photo}
 <h4>${safe(b.title)}</h4>
 <div class="muted">${safe(b.author)}</div>
-<div class="muted">${safe(b.condition||"")}</div>
+<div class="muted">${safe(b.condition)}</div>
 <div class="price">${Number(b.price).toLocaleString("uz-UZ")} so‘m</div>
-<button onclick="toggleFav(${b.id})">${favorites.includes(b.id)?"❤️":"♡"}</button>
-${b.phone?`<a href="tel:${safe(b.phone)}">📞 Qo‘ng‘iroq</a>`:""}
-${b.telegram?`<a href="https://t.me/${encodeURIComponent(b.telegram.replace("@",""))}" target="_blank">✈️ Telegram</a>`:""}
+${b.sold?'<div class="status">SOTILGAN</div>':''}
+${!manage?`
+${b.phone?`<a href="tel:${safe(b.phone)}">📞 ${safe(b.phone)}</a>`:'<div class="muted">Telefon ko‘rsatilmagan</div>'}
+${b.telegram?`<a href="https://t.me/${encodeURIComponent(b.telegram.replace("@",""))}" target="_blank">✈️ Telegram: ${safe(b.telegram)}</a>`:'<div class="muted">Telegram ko‘rsatilmagan</div>'}
+<button onclick="toggleFav(${b.id})">${favorites.includes(b.id)?"❤️ Sevimlidan olish":"♡ Sevimliga qo‘shish"}</button>
+`:`${!b.sold?`<button class="sold" onclick="markSold(${b.id})">✓ Sotildi deb belgilash</button>`:''}
+<button class="delete" onclick="deleteBook(${b.id})">🗑 E'lonni o‘chirish</button>`}
 </div>`;
 }
 function render(){
 let q=document.getElementById("search").value.toLowerCase();
-let list=books.filter(b=>(category==="Barchasi"||b.category===category)&&(b.title+" "+b.author).toLowerCase().includes(q));
-document.getElementById("books").innerHTML=list.map(card).join("")||'<div class="empty">Kitob topilmadi</div>';
-document.getElementById("favoriteBooks").innerHTML=books.filter(b=>favorites.includes(b.id)).map(card).join("")||'<div class="empty">Sevimli kitoblar yo‘q</div>';
-document.getElementById("myBooks").innerHTML=books.filter(b=>mine.includes(b.id)).map(card).join("")||'<div class="empty">Hali kitob joylamagansiz</div>';
+let list=books.filter(b=>!b.sold&&(category==="Barchasi"||b.category===category)&&(b.title+" "+b.author).toLowerCase().includes(q));
+document.getElementById("books").innerHTML=list.map(b=>card(b)).join("")||'<div class="empty">Kitob topilmadi</div>';
+
+document.getElementById("favoriteBooks").innerHTML=books.filter(b=>!b.sold&&favorites.includes(b.id)).map(b=>card(b)).join("")||'<div class="empty">Sevimli kitoblar yo‘q</div>';
+
+document.getElementById("myBooks").innerHTML=books.filter(b=>b.owner).map(b=>card(b,true)).join("")||'<div class="empty">Hali kitob joylamagansiz</div>';
+}
+function searchRender(){
+let q=document.getElementById("search2").value.toLowerCase();
+document.getElementById("searchResults").innerHTML=books.filter(b=>!b.sold&&(b.title+" "+b.author).toLowerCase().includes(q)).map(b=>card(b)).join("")||'<div class="empty">Kitob topilmadi</div>';
 }
 function filterBooks(c,btn){
 category=c;
 document.querySelectorAll(".categories button").forEach(x=>x.classList.remove("active"));
-btn.classList.add("active");
-render();
+btn.classList.add("active");render();
 }
 function toggleFav(id){
 favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];
+save();render();searchRender();
+}
+function markSold(id){
+if(!confirm("Bu kitob sotilganini tasdiqlaysizmi?"))return;
+let b=books.find(x=>x.id===id);
+if(b)b.sold=true;
+save();render();searchRender();
+}
+function deleteBook(id){
+if(!confirm("E'lonni butunlay o‘chirmoqchimisiz?"))return;
+books=books.filter(x=>x.id!==id);
+favorites=favorites.filter(x=>x!==id);
 save();render();searchRender();
 }
 function showPage(id,btn){
@@ -168,26 +210,56 @@ render();
 if(id==="searchPage")searchRender();
 window.scrollTo(0,0);
 }
-function searchRender(){
-let q=document.getElementById("search2").value.toLowerCase();
-document.getElementById("searchResults").innerHTML=books.filter(b=>(b.title+" "+b.author).toLowerCase().includes(q)).map(card).join("")||'<div class="empty">Kitob topilmadi</div>';
-}
+
 document.getElementById("search").addEventListener("input",render);
 document.getElementById("search2").addEventListener("input",searchRender);
 
+document.getElementById("photo").addEventListener("change",function(){
+let file=this.files[0];
+if(!file)return;
+if(!file.type.startsWith("image/")){alert("Rasm faylini tanlang.");return;}
+if(file.size>5*1024*1024){alert("Rasm 5 MB dan kichik bo‘lsin.");this.value="";return;}
+let reader=new FileReader();
+reader.onload=function(e){
+let img=new Image();
+img.onload=function(){
+let canvas=document.createElement("canvas");
+let max=800;
+let scale=Math.min(1,max/Math.max(img.width,img.height));
+canvas.width=Math.round(img.width*scale);
+canvas.height=Math.round(img.height*scale);
+canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
+selectedImage=canvas.toDataURL("image/jpeg",0.75);
+document.getElementById("preview").src=selectedImage;
+document.getElementById("preview").style.display="block";
+};
+img.src=e.target.result;
+};
+reader.readAsDataURL(file);
+});
+
 document.getElementById("bookForm").addEventListener("submit",function(e){
 e.preventDefault();
+if(!selectedImage){alert("Kitob rasmini yuklang.");return;}
 let b={
 id:Date.now(),
-title:document.getElementById("title").value,
-author:document.getElementById("author").value,
+title:document.getElementById("title").value.trim(),
+author:document.getElementById("author").value.trim(),
 price:Number(document.getElementById("price").value),
 category:document.getElementById("category").value,
 condition:document.getElementById("condition").value,
-phone:document.getElementById("phone").value,
-telegram:document.getElementById("telegram").value
+phone:document.getElementById("phone").value.trim(),
+telegram:document.getElementById("telegram").value.trim(),
+image:selectedImage,
+owner:true,
+sold:false
 };
-books.unshift(b);mine.push(b.id);save();this.reset();render();
+books.unshift(b);
+if(!save()){books.shift();return;}
+this.reset();
+selectedImage="";
+document.getElementById("preview").style.display="none";
+render();
 alert("Kitobingiz e'lon qilindi!");
 showPage("profile",document.querySelectorAll("nav button")[4]);
 });
@@ -195,4 +267,5 @@ render();
 </script>
 </body>
 </html>
+
 
